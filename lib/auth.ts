@@ -5,39 +5,46 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 
-// lib/auth.ts
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        // Acá definimos cómo se llaman los campos que vienen del formulario
-        usuario: { label: "Usuario", type: "text" }, 
+        usuario: { label: "Usuario", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         try {
-          // Si el form manda "usuario", NextAuth lo pone en credentials.usuario
-          const nombreDeUsuario = credentials?.usuario; 
-          
-          console.log("🔑 Intentando login para:", nombreDeUsuario);
           await dbConnect();
+          
+          // Aceptamos ambos nombres para evitar el "undefined"
+          const loginName = credentials?.usuario || (credentials as any)?.username;
+          
+          if (!loginName) {
+            console.error("❌ No se recibió ningún nombre de usuario");
+            return null;
+          }
 
-          // Buscamos específicamente por el campo 'usuario' de tu DB
-          const user = await User.findOne({ usuario: nombreDeUsuario });
+          console.log("🔑 Intentando login para:", loginName);
+
+          // Buscamos al usuario por cualquiera de los dos campos (por si hay viejos)
+          const user = await User.findOne({
+            $or: [ { usuario: loginName }, { username: loginName } ]
+          });
 
           if (!user) {
-            console.log("❌ Usuario no encontrado en la base de datos:", nombreDeUsuario);
+            console.error("❌ Usuario no encontrado:", loginName);
             return null;
           }
 
           const isValid = await bcrypt.compare(credentials!.password, user.password);
-
           if (!isValid) {
-            console.log("❌ Contraseña incorrecta para:", nombreDeUsuario);
+            console.error("❌ Contraseña incorrecta para:", loginName);
             return null;
           }
 
+          console.log("✅ Login exitoso para:", user.nombre);
+          
           return { 
             id: user._id.toString(), 
             name: user.nombre, 

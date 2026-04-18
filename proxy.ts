@@ -1,7 +1,21 @@
-// middleware.ts
-export { default } from "next-auth/middleware";
+// proxy.ts
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
+
+export default withAuth(
+  function proxy(req) {
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token,
+    },
+    pages: {
+      signIn: "/login",
+    },
+  }
+);
 
 export const config = { 
-  // Protegemos todas las rutas excepto el login y la api de setup (por ahora)
-  matcher: ["/((?!api/setup-admin|login).*)"] 
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|login).*)"] 
 };
