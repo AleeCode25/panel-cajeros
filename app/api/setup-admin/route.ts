@@ -10,14 +10,16 @@ export async function GET() {
   const adminExists = await User.findOne({ username: "admin" });
   if (adminExists) return NextResponse.json({ msg: "Admin ya existe" });
 
-  const hashedPassword = await bcrypt.hash("admin123", 10); // CAMBIA ESTO LUEGO
+  const hashedPassword = await bcrypt.hash("Prime2026@", 10); // CAMBIA ESTO LUEGO
   
   await User.create({
     username: "admin",
+    usuario: "admin",
     password: hashedPassword,
     nombre: "Administrador General",
+    canPay: true,
     role: "ADMIN"
   });
 
-  return NextResponse.json({ msg: "Admin creado con éxito. User: admin, Pass: admin123" });
+  return NextResponse.json({ msg: "Admin creado con éxito. User: admin, Pass: Prime2026@" });
 }

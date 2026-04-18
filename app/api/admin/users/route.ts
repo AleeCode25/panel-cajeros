@@ -5,13 +5,11 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// 1. OBTENER LISTA DE USUARIOS (GET)
 export async function GET() {
   try {
     await dbConnect();
     const session = await getServerSession(authOptions);
 
-    // Seguridad: Solo el ADMIN puede ver la lista
     if (!session || (session.user as any).role !== "ADMIN") {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
@@ -23,13 +21,21 @@ export async function GET() {
   }
 }
 
-// 2. CREAR NUEVO USUARIO (POST)
 export async function POST(req: Request) {
   try {
     await dbConnect();
+    
+    // 🔥 EL FIX MÁGICO PARA EL ERROR E11000:
+    // Le decimos a MongoDB que borre la regla vieja de "username" si todavía existe
+    try {
+      await User.collection.dropIndex("username_1");
+      console.log("🧹 Índice viejo 'username_1' eliminado de la base de datos.");
+    } catch (indexError) {
+      // Lo ignoramos, significa que ya se borró antes.
+    }
+
     const session = await getServerSession(authOptions);
 
-    // Seguridad: Solo el ADMIN puede crear
     if (!session || (session.user as any).role !== "ADMIN") {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
@@ -37,27 +43,24 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { nombre, usuario, password, canPay } = body;
 
-    // Validaciones básicas
     if (!nombre || !usuario || !password) {
       return NextResponse.json({ error: "Faltan datos obligatorios" }, { status: 400 });
     }
 
-    // Verificar si el usuario ya existe
+    // Verificar si el usuario nuevo ya existe (usando el campo correcto)
     const existe = await User.findOne({ usuario });
     if (existe) {
       return NextResponse.json({ error: "El nombre de usuario ya existe" }, { status: 400 });
     }
 
-    // Hashear la contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear el usuario con el nuevo campo canPay
     const nuevoUsuario = await User.create({
       nombre,
       usuario,
       password: hashedPassword,
       role: "CAJERO",
-      canPay: canPay || false // Si no viene, por defecto es false
+      canPay: canPay || false
     });
 
     console.log("✅ Usuario creado:", nuevoUsuario.usuario);
