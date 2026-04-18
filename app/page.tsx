@@ -152,6 +152,17 @@ export default function Home() {
               <Link href="/admin/users" className="bg-gray-800 px-3 py-2 rounded-xl text-[10px] border border-gray-700 font-black uppercase">Usuarios</Link>
             </>
           )}
+          {session?.user?.role === 'ADMIN' && (
+            <>
+              {/* ESTE ES EL BOTÓN NUEVO PARA EL TOKEN 👇 */}
+              <Link href="/admin/configuracion" className="bg-orange-600/20 text-orange-400 px-3 py-2 rounded-xl text-[10px] border border-orange-500/30 font-black uppercase hover:bg-orange-600 hover:text-white transition-all">
+                ⚙️ API
+              </Link>
+              
+              <Link href="/admin/estadisticas" className="bg-purple-600/20 text-purple-400 px-3 py-2 rounded-xl text-[10px] border border-purple-500/30 font-black uppercase">Caja</Link>
+              <Link href="/admin/users" className="bg-gray-800 px-3 py-2 rounded-xl text-[10px] border border-gray-700 font-black uppercase">Usuarios</Link>
+            </>
+          )}
           <button
             onClick={() => setShowCierreModal(true)}
             className="bg-yellow-600/20 text-yellow-500 border border-yellow-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-yellow-600 hover:text-white"
