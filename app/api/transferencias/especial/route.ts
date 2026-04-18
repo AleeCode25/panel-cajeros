@@ -43,7 +43,11 @@ export async function POST(req: Request) {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'PostmanRuntime/7.51.0'
+        // Simulamos ser un Google Chrome en Windows
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Origin': 'https://admin.casino-zeus.eu',
+        'Referer': 'https://admin.casino-zeus.eu/'
       },
       body: JSON.stringify({
         amount: MONTO_FIJO,
