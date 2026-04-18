@@ -4,114 +4,76 @@ import Transferencia from "@/models/Transferencia";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    console.log("🚀 Iniciando carga especial...");
     await dbConnect();
-
     const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-    const body = await req.json();
-    const { usuarioCasino, tipo } = body;
-
-    if (!usuarioCasino || !tipo) {
-      return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
+    // Seguridad: Solo el ADMIN entra acá
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    const cleanUser = usuarioCasino.trim();
-    const MONTO_FIJO = 500;
+    const { searchParams } = new URL(req.url);
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const cajeroId = searchParams.get("cajeroId");
 
-    // 1. Verificamos si ya existe el premio
-    const yaExiste = await Transferencia.findOne({ 
-      usuarioCasino: cleanUser, 
-      remitente: tipo 
-    });
+    // Construimos el filtro
+    let query: any = { estado: "CARGADA" };
 
-    if (yaExiste) {
-      return NextResponse.json({ 
-        error: `Este usuario ya recibió la carga de ${tipo} anteriormente.` 
-      }, { status: 409 });
+    // Filtro por fecha (fechaCarga es cuando se confirmó el dinero en Zeus)
+    if (from && to) {
+      query.fechaCarga = { 
+        $gte: new Date(from), 
+        $lte: new Date(to) 
+      };
     }
 
-    // 2. Llamada a Zeus
-    const zeusUrl = "https://admin.casino-zeus.eu/api/operator/v1/account-transfers";
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZXNzaW9uSWQiOiIwMTljYjc3OC1jYjY2LTcxNmMtYTM4OC1jY2NmYjBjMzliZWYiLCJzdWIiOjUzMzM2OTYsInVzZXJuYW1lIjoiUE9SLVRPRE8yNiIsImlhdCI6MTc3MjYwNDY3MiwiZXhwIjoxODA0MTQwNjcyfQ.vsdKI9mdaUhnwSEd8hNOfTogqnAZk_UdXZgysUHEfzI";
+    // Filtro por cajero específico
+    if (cajeroId && cajeroId !== "todos") {
+      query.cajeroAsignado = cajeroId;
+    }
 
-    const zeusResponse = await fetch(zeusUrl, {
+    const transferencias = await Transferencia.find(query)
+      .populate("cajeroAsignado", "nombre")
+      .sort({ fechaCarga: -1 });
 
-      method: 'POST',
+    // Calculamos los totales separados
+    let totalEntrado = 0;   // Monto + Bono + Regalos (Todo lo que entró a Zeus)
+    let totalSinBono = 0;   // Solo PLATA REAL (lo que entró por transferencia)
+    let totalBonos = 0;     // Solo los regalos de bonos en transferencias
+    let totalEspeciales = 0;// Fichas regaladas por Canal, Instagram, etc.
 
-      headers: {
-
-        'Authorization': `Bearer ${token}`,
-
-        'Content-Type': 'application/json',
-
-        'User-Agent': 'PostmanRuntime/7.51.0'
-
-      },
-
-      body: JSON.stringify({
-
-        amount: MONTO_FIJO,
-
-        operation: "INCOME",
-
-        targetUserName: cleanUser
-
-      })
-
-    });
-
-    // 👇 ESTO ES LO NUEVO: CAPTURAR EL ERROR REAL 👇
-    if (!zeusResponse.ok) {
-      const errorStatus = zeusResponse.status;
-      const errorText = await zeusResponse.text(); // Leemos el HTML o JSON que devuelve Zeus
+    transferencias.forEach(t => {
+      const montoBase = parseFloat(t.monto.toString()) || 0;
+      const montoBono = parseFloat(t.montoBono?.toString() || "0");
       
-      console.error(`❌ ZEUS RECHAZÓ (Status: ${errorStatus}):`, errorText);
-      
-      // Si devuelve HTML, seguro es el bloqueo de Cloudflare
-      if (errorText.includes("<html") || errorText.includes("cloudflare")) {
-         return NextResponse.json({ 
-           error: "El casino bloqueó la IP de Vercel (Cloudflare 403)." 
-         }, { status: 400 });
+      // Verificamos si es una carga de promoción/regalo
+      const esEspecial = t.coelsaCode && t.coelsaCode.startsWith("ESPECIAL-");
+
+      if (esEspecial) {
+        totalEspeciales += montoBase; // Suma a la caja de regalos
+        totalEntrado += montoBase;    // También suma al total de Zeus
+      } else {
+        totalSinBono += montoBase;    // Plata Real
+        totalBonos += montoBono;      // Bonos
+        totalEntrado += (montoBase + montoBono); // Suma al total de Zeus
       }
+    });
 
-      return NextResponse.json({ 
-        error: `El casino rechazó la carga. Código: ${errorStatus}` 
-      }, { status: 400 });
-    }
+    return NextResponse.json({
+      resumen: {
+        totalEntrado,
+        totalSinBono,
+        totalBonos,
+        totalEspeciales,
+        cantidad: transferencias.length
+      },
+      movimientos: transferencias
+    });
 
-    // 3. Crear el registro con los campos requeridos "dummy"
-    // Generamos un ID único para que no choquen en la base de datos
-    const timestamp = Date.now();
-
-    try {
-      await Transferencia.create({
-        remitente: tipo, 
-        monto: MONTO_FIJO,
-        cuit: "00-00000000-0",
-        // Llenamos los campos que te pedía la base de datos con valores genéricos
-        coelsaCode: `ESPECIAL-${tipo}-${timestamp}`, 
-        transaccionId: `TX-${tipo}-${timestamp}`,
-        estado: "CARGADA",
-        usuarioCasino: cleanUser,
-        cajeroAsignado: (session.user as any).id,
-        fechaCarga: new Date(),
-        montoBono: 0,
-        conBono: false
-      });
-      
-      console.log("✅ Carga especial registrada exitosamente");
-      return NextResponse.json({ success: true });
-
-    } catch (dbError: any) {
-      console.log("❌ Error de Validación:", dbError.message);
-      return NextResponse.json({ error: "Error de validación en BD: " + dbError.message }, { status: 500 });
-    }
-
-  } catch (error: any) {
-    return NextResponse.json({ error: "Error de servidor" }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
