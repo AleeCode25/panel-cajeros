@@ -39,20 +39,29 @@ export async function POST(req: Request) {
     const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZXNzaW9uSWQiOiIwMTljYjc3OC1jYjY2LTcxNmMtYTM4OC1jY2NmYjBjMzliZWYiLCJzdWIiOjUzMzM2OTYsInVzZXJuYW1lIjoiUE9SLVRPRE8yNiIsImlhdCI6MTc3MjYwNDY3MiwiZXhwIjoxODA0MTQwNjcyfQ.vsdKI9mdaUhnwSEd8hNOfTogqnAZk_UdXZgysUHEfzI";
 
     const zeusResponse = await fetch(zeusUrl, {
+
       method: 'POST',
+
       headers: {
+
         'Authorization': `Bearer ${token}`,
+
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Origin': 'https://admin.casino-zeus.eu',
-        'Referer': 'https://admin.casino-zeus.eu/'
+
+        'User-Agent': 'PostmanRuntime/7.51.0'
+
       },
+
       body: JSON.stringify({
+
         amount: MONTO_FIJO,
+
         operation: "INCOME",
+
         targetUserName: cleanUser
+
       })
+
     });
 
     // 👇 ESTO ES LO NUEVO: CAPTURAR EL ERROR REAL 👇
