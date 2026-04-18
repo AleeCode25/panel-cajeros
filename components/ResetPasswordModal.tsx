@@ -28,7 +28,7 @@ export default function ResetPasswordModal({ onClose }: { onClose: () => void })
   };
 
   const handleCopy = () => {
-    const texto = `Te dejo tu usuario y contraseña :\n\nUsuario : ${username}\nContraseña : 12345678\n\nLink de la plataforma: https://casino-zeus.eu`;
+    const texto = `Te dejo tu usuario y contraseña :\n\nUsuario : ${username}\nContraseña : 12345678\n\nLink de la plataforma: https://casino-zeus.eu \n\nCARGA MINIMA: $2.000\nRETIRO MINIMO: $5.000\nCARGAS & RETIROS 24HS SIN LIMITES`;
     navigator.clipboard.writeText(texto);
     alert("¡Copiado para enviar por WhatsApp!");
   };
@@ -69,6 +69,10 @@ export default function ResetPasswordModal({ onClose }: { onClose: () => void })
             <div className="bg-gray-800 p-4 rounded-2xl text-left mb-6 border border-gray-700 text-xs font-mono">
                 <p className="text-gray-400">Usuario : <span className="text-white font-bold">{username}</span></p>
                 <p className="text-gray-400">Contraseña : <span className="text-white font-bold">12345678</span></p>
+                <p className="text-gray-500 text-xs mt-2">Link de la plataforma: https://casino-zeus.eu</p>
+                <p className="text-gray-500 text-xs mt-2">CARGA MINIMA: $2.000</p>
+                <p className="text-gray-500 text-xs mt-2">RETIRO MINIMO: $5.000</p>
+                <p className="text-gray-500 text-xs mt-2">CARGAS & RETIROS 24HS SIN LIMITES</p>
             </div>
 
             <button 

@@ -31,7 +31,7 @@ export default function CrearUsuarioModal({ onClose }: { onClose: () => void }) 
   };
 
   const handleCopy = () => {
-    const texto = `Te dejo tu nuevo usuario :\n\nUsuario: ${username}\nContraseña: ${password}\n\nLink de la plataforma: https://casino-zeus.eu`;
+    const texto = `Te dejo tu nuevo usuario :\n\nUsuario: ${username}\nContraseña: ${password}\n\nLink de la plataforma: https://casino-zeus.eu\n\nCARGA MINIMA: $2.000\nRETIRO MINIMO: $5.000\nCARGAS & RETIROS 24HS SIN LIMITES`;
     navigator.clipboard.writeText(texto);
     alert("¡Copiado al portapapeles!");
   };
@@ -86,6 +86,9 @@ export default function CrearUsuarioModal({ onClose }: { onClose: () => void }) 
               <p className="text-white font-mono font-bold">Usuario: {username}</p>
               <p className="text-white font-mono font-bold">Contraseña: {password}</p>
               <p className="text-gray-500 text-xs mt-2">Link de la plataforma: https://casino-zeus.eu</p>
+              <p className="text-gray-500 text-xs mt-2">CARGA MINIMA: $2.000</p>
+              <p className="text-gray-500 text-xs mt-2">RETIRO MINIMO: $5.000</p>
+              <p className="text-gray-500 text-xs mt-2">CARGAS & RETIROS 24HS SIN LIMITES</p>
             </div>
 
             <div className="flex flex-col gap-3">
