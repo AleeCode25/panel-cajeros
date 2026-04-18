@@ -5,8 +5,8 @@ import CargarModal from '@/components/CargarModal';
 import CrearUsuarioModal from '@/components/CrearUsuarioModal';
 import CargaEspecialModal from '@/components/CargaEspecialModal';
 import ResetPasswordModal from '@/components/ResetPasswordModal';
-import VerSaldoModal from '@/components/VerSaldoModal'; // <-- NUEVO
-import RetirarModal from '@/components/RetirarModal';   // <-- NUEVO
+import VerSaldoModal from '@/components/VerSaldoModal'; 
+import RetirarModal from '@/components/RetirarModal'; 
 import CierreTurnoModal from '@/components/CierreTurnoModal';
 import Link from 'next/link';
 
@@ -38,13 +38,11 @@ export default function Home() {
       const dataP = await resP.json();
 
       // 👇 LÓGICA DEL SONIDO 👇
-      // Si la cantidad nueva es mayor a la que teníamos guardada, ¡SUENA!
       if (dataP.length > prevPendientes.current) {
-        // Usamos un sonido libre de Google, no hace falta que descargues nada
         const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/woodpecker.ogg');
         audio.play().catch(e => console.log('El navegador bloqueó el autoplay del sonido'));
       }
-      prevPendientes.current = dataP.length; // Actualizamos la memoria
+      prevPendientes.current = dataP.length; 
       // 👆 FIN LÓGICA DEL SONIDO 👆
 
       setPendientes(dataP);
@@ -120,7 +118,6 @@ export default function Home() {
 
         <div className="flex items-center gap-2 flex-wrap justify-center relative">
 
-          {/* BOTONES DE ZEUS */}
           <button onClick={() => setShowSaldoModal(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-emerald-600 hover:text-white flex items-center gap-1">
             💰 Saldo
           </button>
@@ -146,23 +143,21 @@ export default function Home() {
 
           <button onClick={() => setShowResetPass(true)} className="bg-gray-800 text-gray-400 border border-gray-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-gray-700 hover:text-white">Clave</button>
 
+          {/* BOTONES DE ADMINISTRADOR ÚNICOS */}
           {session?.user?.role === 'ADMIN' && (
             <>
-              <Link href="/admin/estadisticas" className="bg-purple-600/20 text-purple-400 px-3 py-2 rounded-xl text-[10px] border border-purple-500/30 font-black uppercase">Caja</Link>
-              <Link href="/admin/users" className="bg-gray-800 px-3 py-2 rounded-xl text-[10px] border border-gray-700 font-black uppercase">Usuarios</Link>
-            </>
-          )}
-          {session?.user?.role === 'ADMIN' && (
-            <>
-              {/* ESTE ES EL BOTÓN NUEVO PARA EL TOKEN 👇 */}
               <Link href="/admin/configuracion" className="bg-orange-600/20 text-orange-400 px-3 py-2 rounded-xl text-[10px] border border-orange-500/30 font-black uppercase hover:bg-orange-600 hover:text-white transition-all">
                 ⚙️ API
               </Link>
-              
-              <Link href="/admin/estadisticas" className="bg-purple-600/20 text-purple-400 px-3 py-2 rounded-xl text-[10px] border border-purple-500/30 font-black uppercase">Caja</Link>
-              <Link href="/admin/users" className="bg-gray-800 px-3 py-2 rounded-xl text-[10px] border border-gray-700 font-black uppercase">Usuarios</Link>
+              <Link href="/admin/estadisticas" className="bg-purple-600/20 text-purple-400 px-3 py-2 rounded-xl text-[10px] border border-purple-500/30 font-black uppercase hover:bg-purple-600 hover:text-white transition-all">
+                Caja
+              </Link>
+              <Link href="/admin/users" className="bg-gray-800 px-3 py-2 rounded-xl text-[10px] border border-gray-700 font-black uppercase hover:bg-gray-700 hover:text-white transition-all">
+                Usuarios
+              </Link>
             </>
           )}
+
           <button
             onClick={() => setShowCierreModal(true)}
             className="bg-yellow-600/20 text-yellow-500 border border-yellow-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-yellow-600 hover:text-white"
