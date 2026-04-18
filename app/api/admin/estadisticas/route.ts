@@ -9,7 +9,6 @@ export async function GET(req: Request) {
     await dbConnect();
     const session = await getServerSession(authOptions);
 
-    // Seguridad: Solo el ADMIN entra acá
     if (!session || (session.user as any).role !== "ADMIN") {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
@@ -19,38 +18,38 @@ export async function GET(req: Request) {
     const to = searchParams.get("to");
     const cajeroId = searchParams.get("cajeroId");
 
-    // Construimos el filtro
     let query: any = { estado: "CARGADA" };
 
-    // Filtro por fecha (fechaCarga es cuando se confirmó el dinero en Zeus)
     if (from && to) {
-      query.fechaCarga = { 
-        $gte: new Date(from), 
-        $lte: new Date(to) 
-      };
+      query.fechaCarga = { $gte: new Date(from), $lte: new Date(to) };
     }
 
-    // Filtro por cajero específico
     if (cajeroId && cajeroId !== "todos") {
       query.cajeroAsignado = cajeroId;
     }
 
-    const transferencias = await Transferencia.find(query)
-      .populate("cajeroAsignado", "nombre")
-      .sort({ fechaCarga: -1 });
+    const transferencias = await Transferencia.find(query).populate("cajeroAsignado", "nombre").sort({ fechaCarga: -1 });
 
-    // Calculamos los totales
-    let totalEntrado = 0; // Monto + Bono
-    let totalSinBono = 0; // Solo lo que entró por transferencia
-    let totalBonos = 0;   // Solo los regalos de bonos
+    let totalEntrado = 0;   
+    let totalSinBono = 0;   
+    let totalBonos = 0;     
+    let totalEspeciales = 0;
 
     transferencias.forEach(t => {
       const montoBase = parseFloat(t.monto.toString()) || 0;
       const montoBono = parseFloat(t.montoBono?.toString() || "0");
       
-      totalSinBono += montoBase;
-      totalBonos += montoBono;
-      totalEntrado += (montoBase + montoBono);
+      // ✅ AHORA DETECTA LOS VIEJOS Y LOS NUEVOS
+      const esEspecial = ['CANAL', 'INSTAGRAM', 'AGENDAMIENTO'].includes(t.remitente) || (t.coelsaCode && t.coelsaCode.startsWith("ESPECIAL-"));
+
+      if (esEspecial) {
+        totalEspeciales += montoBase; 
+        totalEntrado += montoBase;    
+      } else {
+        totalSinBono += montoBase;    
+        totalBonos += montoBono;      
+        totalEntrado += (montoBase + montoBono); 
+      }
     });
 
     return NextResponse.json({
@@ -58,6 +57,7 @@ export async function GET(req: Request) {
         totalEntrado,
         totalSinBono,
         totalBonos,
+        totalEspeciales,
         cantidad: transferencias.length
       },
       movimientos: transferencias
