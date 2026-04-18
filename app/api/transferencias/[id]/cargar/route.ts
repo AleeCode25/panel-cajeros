@@ -51,7 +51,20 @@ export async function POST(req: Request, { params }: any) {
     });
 
     if (!zeusResponse.ok) {
-      return NextResponse.json({ error: "Zeus rechazó la carga." }, { status: 400 });
+      const errorStatus = zeusResponse.status;
+      const errorText = await zeusResponse.text(); 
+      
+      console.error(`❌ ZEUS RECHAZÓ (Status: ${errorStatus}):`, errorText);
+      
+      // Si es un error de Cloudflare, lo sabremos por el HTML
+      if (errorText.includes("<html") || errorText.includes("cloudflare")) {
+         return NextResponse.json({ error: "Bloqueo de Cloudflare (IP quemada)." }, { status: 403 });
+      }
+
+      // Si es un error de Zeus (ej: usuario no existe), nos va a dar un JSON
+      return NextResponse.json({ 
+        error: `Error de Zeus: ${errorText}` 
+      }, { status: 400 });
     }
 
     // 4. ACTUALIZAR DB (y guardar el nombre que escribiste para que no sea más null)
