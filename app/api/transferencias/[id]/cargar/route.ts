@@ -27,6 +27,14 @@ export async function POST(req: Request, { params }: any) {
       return NextResponse.json({ error: "Falta el Usuario de Casino." }, { status: 400 });
     }
 
+    const montoACargar = transferencia.monto;
+
+    if (montoACargar < 10) {
+      return NextResponse.json({ 
+        error: "El monto mínimo de carga en el casino es de $10 ARS." 
+      }, { status: 400 });
+    }
+
     // 3. LLAMADA A ZEUS (con el usuario del modal)
     const zeusUrl = "https://admin.casino-zeus.eu/api/operator/v1/account-transfers";
     const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZXNzaW9uSWQiOiIwMTljYjc3OC1jYjY2LTcxNmMtYTM4OC1jY2NmYjBjMzliZWYiLCJzdWIiOjUzMzM2OTYsInVzZXJuYW1lIjoiUE9SLVRPRE8yNiIsImlhdCI6MTc3MjYwNDY3MiwiZXhwIjoxODA0MTQwNjcyfQ.vsdKI9mdaUhnwSEd8hNOfTogqnAZk_UdXZgysUHEfzI";
