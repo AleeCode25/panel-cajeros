@@ -1,31 +1,34 @@
 'use client';
 import { signOut, useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import CargarModal from '@/components/CargarModal';
 import CrearUsuarioModal from '@/components/CrearUsuarioModal';
 import CargaEspecialModal from '@/components/CargaEspecialModal';
 import ResetPasswordModal from '@/components/ResetPasswordModal';
 import VerSaldoModal from '@/components/VerSaldoModal'; // <-- NUEVO
 import RetirarModal from '@/components/RetirarModal';   // <-- NUEVO
+import CierreTurnoModal from '@/components/CierreTurnoModal';
 import Link from 'next/link';
 
 export default function Home() {
   const { data: session } = useSession();
+  const prevPendientes = useRef(0)
   const [pendientes, setPendientes] = useState([]);
   const [realizadas, setRealizadas] = useState([]);
   const [selectedTransfer, setSelectedTransfer] = useState(null);
   const [showCrearUsuario, setShowCrearUsuario] = useState(false);
   const [showResetPass, setShowResetPass] = useState(false);
   const [showExtraMenu, setShowExtraMenu] = useState(false);
-  
+
   // ESTADOS NUEVOS PARA LOS MODALES DE ZEUS
   const [showSaldoModal, setShowSaldoModal] = useState(false);
   const [showRetirarModal, setShowRetirarModal] = useState(false);
-  
+  const [showCierreModal, setShowCierreModal] = useState(false);
+
   const [especialType, setEspecialType] = useState<string | null>(null);
   const [tab, setTab] = useState('pendientes');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
@@ -33,6 +36,17 @@ export default function Home() {
     try {
       const resP = await fetch('/api/transferencias?estado=PENDIENTE');
       const dataP = await resP.json();
+
+      // 👇 LÓGICA DEL SONIDO 👇
+      // Si la cantidad nueva es mayor a la que teníamos guardada, ¡SUENA!
+      if (dataP.length > prevPendientes.current) {
+        // Usamos un sonido libre de Google, no hace falta que descargues nada
+        const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/woodpecker.ogg');
+        audio.play().catch(e => console.log('El navegador bloqueó el autoplay del sonido'));
+      }
+      prevPendientes.current = dataP.length; // Actualizamos la memoria
+      // 👆 FIN LÓGICA DEL SONIDO 👆
+
       setPendientes(dataP);
 
       const resR = await fetch('/api/transferencias?estado=CARGADA');
@@ -44,19 +58,19 @@ export default function Home() {
     }
   };
 
-  useEffect(() => { 
-    fetchData(); 
+  useEffect(() => {
+    fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const filteredPendientes = pendientes.filter((t: any) => 
+  const filteredPendientes = pendientes.filter((t: any) =>
     t.remitente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.cuit?.includes(searchTerm) ||
     t.coelsaCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredRealizadas = realizadas.filter((t: any) => 
+  const filteredRealizadas = realizadas.filter((t: any) =>
     t.remitente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.usuarioCasino?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.coelsaCode?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -100,23 +114,23 @@ export default function Home() {
     <main className="min-h-screen bg-gray-950 text-white p-4 md:p-8 font-sans tracking-tight">
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center bg-gray-900 p-6 rounded-3xl border border-gray-800 shadow-2xl gap-4">
         <div>
-          <h1 className="text-2xl font-black text-blue-500 italic uppercase">HG Panel</h1>
+          <h1 className="text-2xl font-black text-blue-500 italic uppercase">Panel Club Prime</h1>
           <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Cajero: <span className="text-white">{session?.user?.name || "Cargando..."}</span></p>
         </div>
-        
+
         <div className="flex items-center gap-2 flex-wrap justify-center relative">
-          
+
           {/* BOTONES DE ZEUS */}
           <button onClick={() => setShowSaldoModal(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-emerald-600 hover:text-white flex items-center gap-1">
             💰 Saldo
           </button>
-          
+
           <button onClick={() => setShowRetirarModal(true)} className="bg-red-600/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-red-600 hover:text-white flex items-center gap-1">
             💸 Retirar
           </button>
 
           <button onClick={() => setShowCrearUsuario(true)} className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">+ Usuario</button>
-          
+
           <div className="relative">
             <button onClick={() => setShowExtraMenu(!showExtraMenu)} className="bg-gray-800 border border-gray-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-700 transition-all flex items-center gap-2">
               Extras {showExtraMenu ? '▲' : '▼'}
@@ -138,13 +152,19 @@ export default function Home() {
               <Link href="/admin/users" className="bg-gray-800 px-3 py-2 rounded-xl text-[10px] border border-gray-700 font-black uppercase">Usuarios</Link>
             </>
           )}
+          <button
+            onClick={() => setShowCierreModal(true)}
+            className="bg-yellow-600/20 text-yellow-500 border border-yellow-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-yellow-600 hover:text-white"
+          >
+            🔒 Turno
+          </button>
           <button onClick={() => signOut()} className="bg-gray-800 text-gray-500 px-3 py-2 rounded-xl text-[10px] font-black uppercase hover:text-white transition-all">Salir</button>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="🔍 Buscar por Nombre, CUIT o ID Coelsa..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
@@ -152,8 +172,8 @@ export default function Home() {
         />
 
         <div className="flex gap-8 mb-8 border-b border-gray-800 font-black text-[10px] uppercase tracking-widest">
-          <button onClick={() => {setTab('pendientes'); setCurrentPage(1);}} className={`pb-4 px-2 transition-all ${tab === 'pendientes' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}>Pendientes ({filteredPendientes.length})</button>
-          <button onClick={() => {setTab('realizadas'); setCurrentPage(1);}} className={`pb-4 px-2 transition-all ${tab === 'realizadas' ? 'border-b-2 border-green-500 text-green-500' : 'text-gray-500'}`}>Realizadas ({filteredRealizadas.length})</button>
+          <button onClick={() => { setTab('pendientes'); setCurrentPage(1); }} className={`pb-4 px-2 transition-all ${tab === 'pendientes' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}>Pendientes ({filteredPendientes.length})</button>
+          <button onClick={() => { setTab('realizadas'); setCurrentPage(1); }} className={`pb-4 px-2 transition-all ${tab === 'realizadas' ? 'border-b-2 border-green-500 text-green-500' : 'text-gray-500'}`}>Realizadas ({filteredRealizadas.length})</button>
         </div>
 
         {tab === 'pendientes' ? (
@@ -241,10 +261,11 @@ export default function Home() {
       {showCrearUsuario && <CrearUsuarioModal onClose={() => setShowCrearUsuario(false)} />}
       {showResetPass && <ResetPasswordModal onClose={() => setShowResetPass(false)} />}
       {especialType && <CargaEspecialModal tipo={especialType} onClose={() => setEspecialType(null)} onSuccess={() => { setEspecialType(null); fetchData(); }} />}
-      
+
       {/* MODALES NUEVOS */}
       {showSaldoModal && <VerSaldoModal onClose={() => setShowSaldoModal(false)} />}
       {showRetirarModal && <RetirarModal onClose={() => setShowRetirarModal(false)} />}
+      {showCierreModal && <CierreTurnoModal onClose={() => setShowCierreModal(false)} />}
     </main>
   );
 }

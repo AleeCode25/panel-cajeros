@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import Config from "@/models/Config";
 
 export async function PATCH(req: Request) {
   try {
@@ -11,7 +12,13 @@ export async function PATCH(req: Request) {
     const nuevaClave = "12345678"; // La clave que pediste del 1 al 8
 
     const zeusUrl = `https://admin.casino-zeus.eu/api/operator/v1/users/${username}/reset-password`;
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZXNzaW9uSWQiOiIwMTljYjc3OC1jYjY2LTcxNmMtYTM4OC1jY2NmYjBjMzliZWYiLCJzdWIiOjUzMzM2OTYsInVzZXJuYW1lIjoiUE9SLVRPRE8yNiIsImlhdCI6MTc3MjYwNDY3MiwiZXhwIjoxODA0MTQwNjcyfQ.vsdKI9mdaUhnwSEd8hNOfTogqnAZk_UdXZgysUHEfzI";
+    const config = await Config.findOne({ key: "ZEUS_TOKEN" });
+
+    if (!config || !config.value) {
+      return NextResponse.json({ error: "Falta configurar el Token de Zeus en el panel de Admin" }, { status: 500 });
+    }
+
+    const token = config.value;
 
     const response = await fetch(zeusUrl, {
       method: 'PATCH',
@@ -27,8 +34,8 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: true });
     } else {
       const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json({ 
-        error: errorData.message || "No se pudo encontrar al usuario o error en Zeus" 
+      return NextResponse.json({
+        error: errorData.message || "No se pudo encontrar al usuario o error en Zeus"
       }, { status: 400 });
     }
 

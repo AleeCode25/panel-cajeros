@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import Config from "@/models/Config";
 
 export async function GET(req: Request) {
   try {
@@ -13,7 +14,13 @@ export async function GET(req: Request) {
     if (!username) return NextResponse.json({ error: "Falta el nombre de usuario" }, { status: 400 });
 
     const zeusUrl = `https://admin.casino-zeus.eu/api/operator/v1/users/balance?username=${username.trim()}`;
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZXNzaW9uSWQiOiIwMTljYjc3OC1jYjY2LTcxNmMtYTM4OC1jY2NmYjBjMzliZWYiLCJzdWIiOjUzMzM2OTYsInVzZXJuYW1lIjoiUE9SLVRPRE8yNiIsImlhdCI6MTc3MjYwNDY3MiwiZXhwIjoxODA0MTQwNjcyfQ.vsdKI9mdaUhnwSEd8hNOfTogqnAZk_UdXZgysUHEfzI";
+    const config = await Config.findOne({ key: "ZEUS_TOKEN" });
+
+    if (!config || !config.value) {
+      return NextResponse.json({ error: "Falta configurar el Token de Zeus en el panel de Admin" }, { status: 500 });
+    }
+
+    const token = config.value;
 
     const response = await fetch(zeusUrl, {
       method: 'GET',

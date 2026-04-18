@@ -40,17 +40,57 @@ export default function AdminEstadisticas() {
 
   if (status === "loading") return null;
 
+  const exportToCSV = () => {
+    if (!data || data.movimientos.length === 0) return;
+
+    // Encabezados
+    const headers = ["Fecha,Cajero,Detalle,Monto Base,Bono,Total,Usuario Zeus\n"];
+    
+    // Filas
+    const rows = data.movimientos.map((m: any) => {
+      const fecha = new Date(m.fechaCarga).toLocaleString();
+      const cajero = m.cajeroAsignado?.nombre || "S/D";
+      const detalle = m.remitente;
+      const base = m.monto || 0;
+      const bono = m.montoBono || 0;
+      const total = base + bono;
+      const user = m.usuarioCasino;
+      
+      return `${fecha},${cajero},${detalle},${base},${bono},${total},${user}`;
+    }).join("\n");
+
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Caja_${from}_a_${to}.csv`);
+    link.click();
+  };
+
   return (
     <main className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8">
           <div>
             <Link href="/" className="text-blue-500 text-xs font-black uppercase mb-2 block">← Volver al Panel</Link>
             <h1 className="text-3xl font-black italic uppercase">Control de Caja</h1>
           </div>
-          <button onClick={fetchStats} className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all">
-            {loading ? "Calculando..." : "Actualizar Datos"}
-          </button>
+          
+          {/* 👇 ACÁ AGRUPAMOS LOS DOS BOTONES 👇 */}
+          <div className="flex gap-3">
+            <button 
+              onClick={exportToCSV}
+              className="bg-green-600 hover:bg-green-700 px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-green-900/20"
+            >
+              📊 Excel
+            </button>
+            <button 
+              onClick={fetchStats} 
+              className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20"
+            >
+              {loading ? "Calculando..." : "Actualizar Datos"}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-900 p-6 rounded-[32px] border border-gray-800 mb-8 shadow-2xl">
