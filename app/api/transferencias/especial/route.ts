@@ -43,7 +43,6 @@ export async function POST(req: Request) {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        // Simulamos ser un Google Chrome en Windows
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
         'Accept': 'application/json, text/plain, */*',
         'Origin': 'https://admin.casino-zeus.eu',
@@ -56,8 +55,23 @@ export async function POST(req: Request) {
       })
     });
 
+    // 👇 ESTO ES LO NUEVO: CAPTURAR EL ERROR REAL 👇
     if (!zeusResponse.ok) {
-      return NextResponse.json({ error: "El casino rechazó la carga." }, { status: 400 });
+      const errorStatus = zeusResponse.status;
+      const errorText = await zeusResponse.text(); // Leemos el HTML o JSON que devuelve Zeus
+      
+      console.error(`❌ ZEUS RECHAZÓ (Status: ${errorStatus}):`, errorText);
+      
+      // Si devuelve HTML, seguro es el bloqueo de Cloudflare
+      if (errorText.includes("<html") || errorText.includes("cloudflare")) {
+         return NextResponse.json({ 
+           error: "El casino bloqueó la IP de Vercel (Cloudflare 403)." 
+         }, { status: 400 });
+      }
+
+      return NextResponse.json({ 
+        error: `El casino rechazó la carga. Código: ${errorStatus}` 
+      }, { status: 400 });
     }
 
     // 3. Crear el registro con los campos requeridos "dummy"
