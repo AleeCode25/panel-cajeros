@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Transferencia from "@/models/Transferencia";
-import Config from "@/models/Config"; // <-- Token dinámico
+import Config from "@/models/Config";
 
 export async function POST(req: Request) {
   try {
@@ -45,31 +45,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Zeus rechazó el retiro: ${errorText}` }, { status: 400 });
     }
 
-    const data = await zeusResponse.json();
+    // A veces Zeus devuelve texto vacío en lugar de JSON al ser exitoso, esto lo previene:
+    let data: any = {};
+    try {
+      data = await zeusResponse.json();
+    } catch (e) {
+      console.log("Zeus no devolvió JSON, pero el retiro fue exitoso");
+    }
 
-    // 👇 ACÁ CREAMOS EL REGISTRO EN LA BASE DE DATOS
+    // 👇 ACÁ CREAMOS EL REGISTRO (Sumé campos por si tu modelo los requiere obligatoriamente)
     const timestamp = Date.now();
     await Transferencia.create({
-      remitente: "RETIRO", // Identificador clave
+      remitente: "RETIRO",
       monto: Number(amount),
       cuit: "00-00000000-0",
       coelsaCode: `RETIRO-${timestamp}`,
-      estado: "CARGADA", // Lo marcamos como completado
+      estado: "CARGADA", 
       usuarioCasino: username.trim(),
       cajeroAsignado: (session.user as any).id,
       fechaCarga: new Date(),
       montoBono: 0,
-      conBono: false
+      conBono: false,
+      banco: "SISTEMA",       // Relleno por si es requerido
+      comprobante: "RETIRO"   // Relleno por si es requerido
     });
 
     return NextResponse.json({ 
       success: true, 
       amount, 
       username,
-      newBalance: data.newBalance 
+      newBalance: data.newBalance || 0 
     });
 
   } catch (error: any) {
-    return NextResponse.json({ error: "Error de servidor" }, { status: 500 });
+    // 👇 AHORA SÍ: SI FALLA TE VA A DECIR EXACTAMENTE POR QUÉ 👇
+    console.error("ERROR EN RETIRO:", error);
+    return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 });
   }
 }
