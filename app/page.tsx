@@ -8,6 +8,7 @@ import ResetPasswordModal from '@/components/ResetPasswordModal';
 import VerSaldoModal from '@/components/VerSaldoModal'; 
 import RetirarModal from '@/components/RetirarModal'; 
 import CierreTurnoModal from '@/components/CierreTurnoModal';
+import HistorialUsuarioModal from '@/components/HistorialUsuarioModal'; // <-- IMPORTACIÓN NUEVA
 import Link from 'next/link';
 
 export default function Home() {
@@ -24,6 +25,7 @@ export default function Home() {
   const [showSaldoModal, setShowSaldoModal] = useState(false);
   const [showRetirarModal, setShowRetirarModal] = useState(false);
   const [showCierreModal, setShowCierreModal] = useState(false);
+  const [showHistorialModal, setShowHistorialModal] = useState(false); // <-- ESTADO NUEVO
 
   const [especialType, setEspecialType] = useState<string | null>(null);
   const [tab, setTab] = useState('pendientes');
@@ -124,6 +126,11 @@ export default function Home() {
 
           <button onClick={() => setShowRetirarModal(true)} className="bg-red-600/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-red-600 hover:text-white flex items-center gap-1">
             💸 Retirar
+          </button>
+
+          {/* BOTÓN NUEVO DE HISTORIAL 👇 */}
+          <button onClick={() => setShowHistorialModal(true)} className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-blue-600 hover:text-white flex items-center gap-1">
+            🕵️‍♂️ Historial
           </button>
 
           <button onClick={() => setShowCrearUsuario(true)} className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">+ Usuario</button>
@@ -272,6 +279,7 @@ export default function Home() {
       {showSaldoModal && <VerSaldoModal onClose={() => setShowSaldoModal(false)} />}
       {showRetirarModal && <RetirarModal onClose={() => setShowRetirarModal(false)} />}
       {showCierreModal && <CierreTurnoModal onClose={() => setShowCierreModal(false)} />}
+      {showHistorialModal && <HistorialUsuarioModal onClose={() => setShowHistorialModal(false)} />}
     </main>
   );
 }

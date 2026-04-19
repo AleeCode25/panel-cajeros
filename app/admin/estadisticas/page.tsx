@@ -48,13 +48,14 @@ export default function AdminEstadisticas() {
     
     // Filas
     const rows = data.movimientos.map((m: any) => {
-      const fecha = new Date(m.fechaCarga).toLocaleString();
-      const cajero = m.cajeroAsignado?.nombre || "S/D";
-      const detalle = m.remitente;
+      // Envolvemos los strings en comillas dobles para que las comas internas no rompan el Excel
+      const fecha = `"${new Date(m.fechaCarga).toLocaleString('es-AR')}"`;
+      const cajero = `"${m.cajeroAsignado?.nombre || 'S/D'}"`;
+      const detalle = `"${m.remitente}"`;
       const base = m.monto || 0;
       const bono = m.montoBono || 0;
       const total = base + bono;
-      const user = m.usuarioCasino;
+      const user = `"${m.usuarioCasino || ''}"`;
       
       return `${fecha},${cajero},${detalle},${base},${bono},${total},${user}`;
     }).join("\n");
