@@ -110,6 +110,13 @@ export default function Home() {
     fetchData();
   };
 
+  // 👇 LÓGICA PARA LIMPIAR CARGAS (SOLO ADMINS) 👇
+  const handleAdminCancel = async (id: string) => {
+    if (!confirm("¿Seguro que querés descartar/limpiar esta carga? Desaparecerá de la lista y no sumará en la caja.")) return;
+    const res = await fetch(`/api/transferencias/${id}/cancelar`, { method: 'POST' });
+    if (res.ok) fetchData();
+  };
+
   return (
     <main className="min-h-screen bg-gray-950 text-white p-4 md:p-8 font-sans tracking-tight">
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center bg-gray-900 p-6 rounded-3xl border border-gray-800 shadow-2xl gap-4">
@@ -214,6 +221,16 @@ export default function Home() {
                     </button>
                     {(isMine || (isTakenByOther && (session?.user as any)?.role === 'ADMIN')) && (
                       <button onClick={() => handleForceRelease(t._id)} className="text-[9px] text-red-500 font-black uppercase text-center py-2 hover:underline transition-all">[ SOLTAR CARGA / LIBERAR ]</button>
+                    )}
+
+                    {/* 👇 BOTÓN DE LIMPIAR SOLO PARA ADMINS 👇 */}
+                    {(session?.user as any)?.role === 'ADMIN' && (
+                      <button 
+                        onClick={() => handleAdminCancel(t._id)} 
+                        className="text-[9px] text-gray-500 font-black uppercase text-center py-2 hover:text-red-500 hover:underline transition-all"
+                      >
+                        [ ❌ DESCARTAR / LIMPIAR ]
+                      </button>
                     )}
                   </div>
                 </div>
