@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       console.log("Zeus no devolvió JSON, pero el retiro fue exitoso");
     }
 
-    // 👇 ACÁ CREAMOS EL REGISTRO (Sumé campos por si tu modelo los requiere obligatoriamente)
+    // 👇 ACÁ CREAMOS EL REGISTRO CON EL TRANSACCION_ID AGREGADO
     const timestamp = Date.now();
     await Transferencia.create({
       remitente: "RETIRO",
@@ -66,8 +66,9 @@ export async function POST(req: Request) {
       fechaCarga: new Date(),
       montoBono: 0,
       conBono: false,
-      banco: "SISTEMA",       // Relleno por si es requerido
-      comprobante: "RETIRO"   // Relleno por si es requerido
+      banco: "SISTEMA",       
+      comprobante: "RETIRO",   
+      transaccionId: `RETIRO-${timestamp}` // <-- ESTO FALTABA PARA QUE MONGO NO LLORE
     });
 
     return NextResponse.json({ 
@@ -78,7 +79,6 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    // 👇 AHORA SÍ: SI FALLA TE VA A DECIR EXACTAMENTE POR QUÉ 👇
     console.error("ERROR EN RETIRO:", error);
     return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 });
   }
