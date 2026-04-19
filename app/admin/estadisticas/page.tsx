@@ -38,23 +38,18 @@ export default function AdminEstadisticas() {
     setLoading(false);
   };
 
-  if (status === "loading") return null;
-
   const exportToCSV = () => {
     if (!data || data.movimientos.length === 0) return;
-
-    // Encabezados
     const headers = ["Fecha,Cajero,Detalle,Monto Base,Bono,Total,Usuario Zeus\n"];
-    
-    // Filas
     const rows = data.movimientos.map((m: any) => {
-      // Envolvemos los strings en comillas dobles para que las comas internas no rompan el Excel
       const fecha = `"${new Date(m.fechaCarga).toLocaleString('es-AR')}"`;
       const cajero = `"${m.cajeroAsignado?.nombre || 'S/D'}"`;
       const detalle = `"${m.remitente}"`;
-      const base = m.monto || 0;
+      // Si es retiro, le ponemos el signo menos en el Excel para identificarlo mejor
+      const signo = m.remitente === "RETIRO" ? "-" : "";
+      const base = `${signo}${m.monto || 0}`;
       const bono = m.montoBono || 0;
-      const total = base + bono;
+      const total = `${signo}${(m.monto || 0) + bono}`;
       const user = `"${m.usuarioCasino || ''}"`;
       
       return `${fecha},${cajero},${detalle},${base},${bono},${total},${user}`;
@@ -68,27 +63,22 @@ export default function AdminEstadisticas() {
     link.click();
   };
 
+  if (status === "loading") return null;
+
   return (
     <main className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8">
           <div>
             <Link href="/" className="text-blue-500 text-xs font-black uppercase mb-2 block">← Volver al Panel</Link>
             <h1 className="text-3xl font-black italic uppercase">Control de Caja</h1>
           </div>
           
-          {/* 👇 ACÁ AGRUPAMOS LOS DOS BOTONES 👇 */}
           <div className="flex gap-3">
-            <button 
-              onClick={exportToCSV}
-              className="bg-green-600 hover:bg-green-700 px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-green-900/20"
-            >
+            <button onClick={exportToCSV} className="bg-green-600 hover:bg-green-700 px-6 py-4 rounded-2xl font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-green-900/20">
               📊 Excel
             </button>
-            <button 
-              onClick={fetchStats} 
-              className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20"
-            >
+            <button onClick={fetchStats} className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">
               {loading ? "Calculando..." : "Actualizar Datos"}
             </button>
           </div>
@@ -114,26 +104,34 @@ export default function AdminEstadisticas() {
 
         {data && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-gray-900 p-8 rounded-[32px] border border-gray-800 shadow-xl">
-                <p className="text-green-400 text-[10px] font-black uppercase tracking-widest mb-2">Plata Real</p>
-                <h3 className="text-4xl font-black text-white font-mono">${(data.resumen.totalSinBono || 0).toLocaleString()}</h3>
+            {/* AHORA SON 5 COLUMNAS PARA MOSTRAR LOS RETIROS APARTE */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl">
+                <p className="text-green-400 text-[9px] font-black uppercase tracking-widest mb-1">Plata Real</p>
+                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalSinBono || 0).toLocaleString()}</h3>
               </div>
-              <div className="bg-gray-900 p-8 rounded-[32px] border border-gray-800 shadow-xl border-l-4 border-l-blue-500">
-                <p className="text-blue-500 text-[10px] font-black uppercase tracking-widest mb-2">Total en Bonos</p>
-                <h3 className="text-4xl font-black text-white font-mono">${(data.resumen.totalBonos || 0).toLocaleString()}</h3>
+              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-blue-500">
+                <p className="text-blue-500 text-[9px] font-black uppercase tracking-widest mb-1">Total en Bonos</p>
+                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalBonos || 0).toLocaleString()}</h3>
               </div>
-              <div className="bg-gray-900 p-8 rounded-[32px] border border-gray-800 shadow-xl border-l-4 border-l-pink-500">
-                <p className="text-pink-500 text-[10px] font-black uppercase tracking-widest mb-2">Extras / Regalos</p>
-                <h3 className="text-4xl font-black text-white font-mono">${(data.resumen.totalEspeciales || 0).toLocaleString()}</h3>
+              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-pink-500">
+                <p className="text-pink-500 text-[9px] font-black uppercase tracking-widest mb-1">Regalos</p>
+                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalEspeciales || 0).toLocaleString()}</h3>
               </div>
-              <div className="bg-blue-600 p-8 rounded-[32px] shadow-2xl shadow-blue-900/20">
-                <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest mb-2">Total Entrado Zeus</p>
-                <h3 className="text-4xl font-black text-white font-mono">${(data.resumen.totalEntrado || 0).toLocaleString()}</h3>
+              
+              {/* NUEVA TARJETA ROJA PARA RETIROS */}
+              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-red-500">
+                <p className="text-red-500 text-[9px] font-black uppercase tracking-widest mb-1">Retiros Fichas</p>
+                <h3 className="text-2xl font-black text-red-400 font-mono">${(data.resumen.totalRetiros || 0).toLocaleString()}</h3>
+              </div>
+
+              <div className="bg-blue-600 p-6 rounded-[24px] shadow-2xl shadow-blue-900/20">
+                <p className="text-blue-200 text-[9px] font-black uppercase tracking-widest mb-1">Total Zeus Entrado</p>
+                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalEntrado || 0).toLocaleString()}</h3>
               </div>
             </div>
 
-            <div className="bg-gray-900 rounded-[32px] border border-gray-800 overflow-hidden shadow-2xl">
+            <div className="bg-gray-900 rounded-[32px] border border-gray-800 overflow-hidden shadow-2xl overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-800/50 text-gray-500 text-[10px] uppercase font-black tracking-widest">
                   <tr>
@@ -148,25 +146,33 @@ export default function AdminEstadisticas() {
                 <tbody className="divide-y divide-gray-800">
                   {data.movimientos.map((m: any) => {
                     const esEspecial = ['CANAL', 'INSTAGRAM', 'AGENDAMIENTO'].includes(m.remitente) || m.coelsaCode?.startsWith("ESPECIAL-");
+                    const esRetiro = m.remitente === "RETIRO";
+                    
                     return (
                       <tr key={m._id} className="hover:bg-gray-800/20 transition-all">
-                        <td className="p-5 text-[10px] font-mono text-gray-400">{new Date(m.fechaCarga).toLocaleString()}</td>
+                        <td className="p-5 text-[10px] font-mono text-gray-400">{new Date(m.fechaCarga).toLocaleString('es-AR')}</td>
                         <td className="p-5 font-bold text-xs">{m.cajeroAsignado?.nombre || 'S/D'}</td>
                         <td className="p-5">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-sm font-bold uppercase">{m.remitente}</p>
                             {esEspecial && <span className="bg-pink-500/20 text-pink-400 text-[8px] px-2 py-1 rounded-md font-black uppercase">Regalo</span>}
+                            {esRetiro && <span className="bg-red-500/20 text-red-500 text-[8px] px-2 py-1 rounded-md font-black uppercase">Extracción</span>}
                           </div>
                           <p className="text-[10px] text-blue-400 font-mono">ID Zeus: {m.usuarioCasino}</p>
                         </td>
-                        <td className={`p-5 font-mono font-bold ${esEspecial ? 'text-pink-400' : 'text-green-400'}`}>
-                          ${(m.monto || 0).toLocaleString()}
+                        <td className={`p-5 font-mono font-bold ${esRetiro ? 'text-red-400' : esEspecial ? 'text-pink-400' : 'text-green-400'}`}>
+                          {esRetiro ? '-' : ''}${(m.monto || 0).toLocaleString()}
                         </td>
-                        <td className="p-5 font-mono text-blue-400 font-bold">${(m.montoBono || 0).toLocaleString()}</td>
-                        <td className="p-5 font-mono text-white font-black text-lg">${((m.monto || 0) + (m.montoBono || 0)).toLocaleString()}</td>
+                        <td className="p-5 font-mono text-blue-400 font-bold">{m.montoBono > 0 ? `+${(m.montoBono).toLocaleString()}` : '-'}</td>
+                        <td className={`p-5 font-mono font-black text-lg ${esRetiro ? 'text-red-500' : 'text-white'}`}>
+                           {esRetiro ? '-' : ''}${((m.monto || 0) + (m.montoBono || 0)).toLocaleString()}
+                        </td>
                       </tr>
                     );
                   })}
+                  {data.movimientos.length === 0 && (
+                    <tr><td colSpan={6} className="p-10 text-center text-gray-500 italic font-bold">No hay registros</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

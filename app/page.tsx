@@ -120,6 +120,8 @@ export default function Home() {
 
         <div className="flex items-center gap-2 flex-wrap justify-center relative">
 
+        <button onClick={() => setShowCrearUsuario(true)} className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">+ Usuario</button>
+
           <button onClick={() => setShowSaldoModal(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-emerald-600 hover:text-white flex items-center gap-1">
             💰 Saldo
           </button>
@@ -132,8 +134,6 @@ export default function Home() {
           <button onClick={() => setShowHistorialModal(true)} className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-blue-600 hover:text-white flex items-center gap-1">
             🕵️‍♂️ Historial
           </button>
-
-          <button onClick={() => setShowCrearUsuario(true)} className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">+ Usuario</button>
 
           <div className="relative">
             <button onClick={() => setShowExtraMenu(!showExtraMenu)} className="bg-gray-800 border border-gray-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-700 transition-all flex items-center gap-2">
@@ -153,14 +153,14 @@ export default function Home() {
           {/* BOTONES DE ADMINISTRADOR ÚNICOS */}
           {session?.user?.role === 'ADMIN' && (
             <>
-              <Link href="/admin/configuracion" className="bg-orange-600/20 text-orange-400 px-3 py-2 rounded-xl text-[10px] border border-orange-500/30 font-black uppercase hover:bg-orange-600 hover:text-white transition-all">
-                ⚙️ API
-              </Link>
               <Link href="/admin/estadisticas" className="bg-purple-600/20 text-purple-400 px-3 py-2 rounded-xl text-[10px] border border-purple-500/30 font-black uppercase hover:bg-purple-600 hover:text-white transition-all">
                 Caja
               </Link>
               <Link href="/admin/users" className="bg-gray-800 px-3 py-2 rounded-xl text-[10px] border border-gray-700 font-black uppercase hover:bg-gray-700 hover:text-white transition-all">
                 Usuarios
+              </Link>
+              <Link href="/admin/configuracion" className="bg-orange-600/20 text-orange-400 px-3 py-2 rounded-xl text-[10px] border border-orange-500/30 font-black uppercase hover:bg-orange-600 hover:text-white transition-all">
+                ⚙️ API
               </Link>
             </>
           )}
