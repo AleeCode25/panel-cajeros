@@ -26,7 +26,8 @@ export default function CargarModal({ transfer, onClose, onSuccess }: Props) {
 
   const handleConfirmar = async () => {
     setLoading(true);
-    // 📢 Alert de Cargando
+    
+    // Mostramos el loading pro de SweetAlert
     Swal.fire({
       title: 'Acreditando fichas...',
       text: `Enviando $${totalFinal.toLocaleString()} a Zeus`,
@@ -38,12 +39,17 @@ export default function CargarModal({ transfer, onClose, onSuccess }: Props) {
       const res = await fetch(`/api/transferencias/${transfer._id}/cargar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usuarioCasino, conBono, montoBono: bonoCalculado }),
+        body: JSON.stringify({ 
+          usuarioCasino: usuarioCasino.trim(), 
+          conBono, 
+          montoBono: Number(bonoCalculado), // Enviamos el bono
+          montoBase: Number(transfer.monto)  // Enviamos la base para que el backend sume
+        }),
       });
+      
       const data = await res.json();
 
       if (res.ok) {
-        // ✅ Alert de Éxito
         await Swal.fire({
           icon: 'success',
           title: '¡Acreditado!',
@@ -53,15 +59,14 @@ export default function CargarModal({ transfer, onClose, onSuccess }: Props) {
         });
         onSuccess();
       } else {
-        // ❌ Alert de Error
         Swal.fire({
           icon: 'error',
-          title: 'Error en la operación',
-          text: data.error || "Hubo un problema con Zeus"
+          title: 'Error en Zeus',
+          text: data.error || "No se pudo acreditar el monto total."
         });
       }
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Sin conexión', text: 'No se pudo contactar al servidor' });
+      Swal.fire({ icon: 'error', title: 'Sin conexión', text: 'Error al contactar al panel.' });
     } finally {
       setLoading(false);
     }

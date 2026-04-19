@@ -10,7 +10,9 @@ export async function POST(req: Request, { params }: any) {
     await dbConnect();
     const { id } = await params;
     const body = await req.json();
-    const { usuarioCasino: usuarioDelModal } = body; 
+    
+    // Recibimos los datos nuevos del modal
+    const { usuarioCasino: usuarioDelModal, conBono, montoBono } = body; 
 
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Sesión expirada. Volvé a loguearte." }, { status: 401 });
@@ -21,7 +23,12 @@ export async function POST(req: Request, { params }: any) {
     const usuarioFinal = usuarioDelModal || transferencia.usuarioCasino;
     if (!usuarioFinal) return NextResponse.json({ error: "Debes ingresar un Usuario de Casino." }, { status: 400 });
 
-    if (transferencia.monto < 10) {
+    // Calculamos el total (Base de la transferencia + Bono si aplica)
+    const montoBase = Number(transferencia.monto);
+    const extraBono = conBono ? Number(montoBono) : 0;
+    const totalAAcreditar = montoBase + extraBono;
+
+    if (totalAAcreditar < 10) {
       return NextResponse.json({ error: "El casino no permite cargas menores a $10 ARS." }, { status: 400 });
     }
 
@@ -34,6 +41,7 @@ export async function POST(req: Request, { params }: any) {
 
     const token = config.value;
     
+    // Enviamos el TOTAL (Base + Bono) a Zeus
     const zeusResponse = await fetch(zeusUrl, {
       method: 'POST',
       headers: {
@@ -42,7 +50,7 @@ export async function POST(req: Request, { params }: any) {
         'User-Agent': 'PostmanRuntime/7.51.0'
       },
       body: JSON.stringify({
-        amount: transferencia.monto,
+        amount: totalAAcreditar, // <--- AHORA SÍ LLEGA EL BONO A ZEUS
         operation: "INCOME",
         targetUserName: usuarioFinal.trim()
       })
@@ -53,13 +61,17 @@ export async function POST(req: Request, { params }: any) {
       return NextResponse.json({ error: `Zeus rechazó: ${errorText}` }, { status: 400 });
     }
 
+    // Actualizamos nuestra base de datos con toda la info
     transferencia.estado = "CARGADA";
     transferencia.usuarioCasino = usuarioFinal;
     transferencia.fechaCarga = new Date();
     transferencia.cajeroAsignado = (session.user as any).id;
+    transferencia.montoBono = extraBono; // Guardamos el bono para las estadísticas
+    transferencia.conBono = conBono;
+    
     await transferencia.save();
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, acreditado: totalAAcreditar });
   } catch (error: any) {
     return NextResponse.json({ error: "Error de servidor: " + error.message }, { status: 500 });
   }
