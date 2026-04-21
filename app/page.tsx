@@ -190,7 +190,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-950 text-white p-4 md:p-8 font-sans tracking-tight">
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center bg-gray-900 p-6 rounded-3xl border border-gray-800 shadow-2xl gap-4">
         <div>
-          <h1 className="text-2xl font-black text-blue-500 italic uppercase">Panel Club Prime</h1>
+          <h1 className="text-2xl font-black text-blue-500 italic uppercase">Panel</h1>
           <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Cajero: <span className="text-white">{session?.user?.name || "Cargando..."}</span></p>
         </div>
 
