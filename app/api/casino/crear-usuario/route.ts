@@ -1,4 +1,3 @@
-// app/api/casino/crear-usuario/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -10,6 +9,7 @@ export async function POST(req: Request) {
     if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
     const { username, password } = await req.json();
+    const safeUsername = username.trim().toLowerCase(); // Filtro backend de minúscula
 
     const zeusUrl = "https://admin.casino-zeus.eu/api/operator/v1/users/";
     const config = await Config.findOne({ key: "ZEUS_TOKEN" });
@@ -29,11 +29,11 @@ export async function POST(req: Request) {
         'Accept': '*/*'
       },
       body: JSON.stringify({
-        playerName: username,
+        playerName: safeUsername,
         password: password,
         role: "player",
-        agentId: 5380501, // Tu ID de agente
-        agentName: "Clubprime2026" // Tu nombre de agente
+        agentId: 5380501, 
+        agentName: "Clubprime2026" 
       })
     });
 

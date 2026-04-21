@@ -18,6 +18,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Faltan datos o el monto es inválido" }, { status: 400 });
     }
 
+    const safeUsername = username.trim().toLowerCase(); // Filtro backend de minúscula
+
     // Buscamos el token en la base de datos
     const config = await Config.findOne({ key: "ZEUS_TOKEN" });
     if (!config || !config.value) {
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         amount: Number(amount),
         operation: "OUTCOME", // OPERACIÓN DE RETIRO
-        targetUserName: username.trim()
+        targetUserName: safeUsername
       })
     });
 
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
       console.log("Zeus no devolvió JSON, pero el retiro fue exitoso");
     }
 
-    // 👇 ACÁ CREAMOS EL REGISTRO CON EL TRANSACCION_ID AGREGADO
+    // ACÁ CREAMOS EL REGISTRO CON EL TRANSACCION_ID AGREGADO
     const timestamp = Date.now();
     await Transferencia.create({
       remitente: "RETIRO",
@@ -61,20 +63,20 @@ export async function POST(req: Request) {
       cuit: "00-00000000-0",
       coelsaCode: `RETIRO-${timestamp}`,
       estado: "CARGADA", 
-      usuarioCasino: username.trim(),
+      usuarioCasino: safeUsername,
       cajeroAsignado: (session.user as any).id,
       fechaCarga: new Date(),
       montoBono: 0,
       conBono: false,
       banco: "SISTEMA",       
       comprobante: "RETIRO",   
-      transaccionId: `RETIRO-${timestamp}` // <-- ESTO FALTABA PARA QUE MONGO NO LLORE
+      transaccionId: `RETIRO-${timestamp}`
     });
 
     return NextResponse.json({ 
       success: true, 
       amount, 
-      username,
+      username: safeUsername,
       newBalance: data.newBalance || 0 
     });
 

@@ -11,7 +11,6 @@ export async function POST(req: Request, { params }: any) {
     const { id } = await params;
     const body = await req.json();
     
-    // Recibimos los datos nuevos del modal
     const { usuarioCasino: usuarioDelModal, conBono, montoBono } = body; 
 
     const session = await getServerSession(authOptions);
@@ -23,7 +22,8 @@ export async function POST(req: Request, { params }: any) {
     const usuarioFinal = usuarioDelModal || transferencia.usuarioCasino;
     if (!usuarioFinal) return NextResponse.json({ error: "Debes ingresar un Usuario de Casino." }, { status: 400 });
 
-    // Calculamos el total (Base de la transferencia + Bono si aplica)
+    const safeUsername = usuarioFinal.trim().toLowerCase(); // Filtro backend de minúscula
+
     const montoBase = Number(transferencia.monto);
     const extraBono = conBono ? Number(montoBono) : 0;
     const totalAAcreditar = montoBase + extraBono;
@@ -41,7 +41,6 @@ export async function POST(req: Request, { params }: any) {
 
     const token = config.value;
     
-    // Enviamos el TOTAL (Base + Bono) a Zeus
     const zeusResponse = await fetch(zeusUrl, {
       method: 'POST',
       headers: {
@@ -50,9 +49,9 @@ export async function POST(req: Request, { params }: any) {
         'User-Agent': 'PostmanRuntime/7.51.0'
       },
       body: JSON.stringify({
-        amount: totalAAcreditar, // <--- AHORA SÍ LLEGA EL BONO A ZEUS
+        amount: totalAAcreditar, 
         operation: "INCOME",
-        targetUserName: usuarioFinal.trim()
+        targetUserName: safeUsername
       })
     });
 
@@ -61,12 +60,11 @@ export async function POST(req: Request, { params }: any) {
       return NextResponse.json({ error: `Zeus rechazó: ${errorText}` }, { status: 400 });
     }
 
-    // Actualizamos nuestra base de datos con toda la info
     transferencia.estado = "CARGADA";
-    transferencia.usuarioCasino = usuarioFinal;
+    transferencia.usuarioCasino = safeUsername;
     transferencia.fechaCarga = new Date();
     transferencia.cajeroAsignado = (session.user as any).id;
-    transferencia.montoBono = extraBono; // Guardamos el bono para las estadísticas
+    transferencia.montoBono = extraBono;
     transferencia.conBono = conBono;
     
     await transferencia.save();

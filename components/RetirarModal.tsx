@@ -14,7 +14,7 @@ export default function RetirarModal({ onClose }: { onClose: () => void }) {
     Swal.fire({ title: 'Buscando jugador...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     try {
-      const res = await fetch(`/api/casino/balance?username=${username}`);
+      const res = await fetch(`/api/casino/balance?username=${username.trim().toLowerCase()}`);
       const data = await res.json();
       if (res.ok) {
         Swal.close();
@@ -44,12 +44,11 @@ export default function RetirarModal({ onClose }: { onClose: () => void }) {
       const res = await fetch('/api/casino/retirar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, amount: monto })
+        body: JSON.stringify({ username: username.trim().toLowerCase(), amount: monto })
       });
       const data = await res.json();
 
       if (res.ok) {
-        // 👇 ACÁ ESTÁ LA MAGIA: Calculamos el saldo real restando lo que sacamos
         const nuevoSaldoFinal = (balance || 0) - monto;
 
         Swal.fire({
@@ -84,7 +83,14 @@ export default function RetirarModal({ onClose }: { onClose: () => void }) {
             <h2 className="text-xl font-black mb-1 text-white uppercase italic text-center">Retirar Fichas</h2>
             <p className="text-center text-gray-500 text-[10px] uppercase mb-6 tracking-widest">Paso 1: Buscar Jugador</p>
             <div className="space-y-4">
-              <input type="text" placeholder="Usuario de Zeus..." value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-red-500 text-center" autoFocus />
+              <input 
+                type="text" 
+                placeholder="Usuario de Zeus..." 
+                value={username} 
+                onChange={e => setUsername(e.target.value.toLowerCase())} // Fuerza minúscula
+                className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-red-500 text-center" 
+                autoFocus 
+              />
               <div className="flex gap-2">
                 <button onClick={onClose} className="flex-1 bg-gray-800 py-4 rounded-2xl font-black text-xs uppercase text-gray-400">Cerrar</button>
                 <button onClick={handleConsultar} disabled={!username || loading} className="flex-[2] bg-red-600 hover:bg-red-700 py-4 rounded-2xl font-black text-xs uppercase transition-all">

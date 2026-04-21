@@ -21,7 +21,7 @@ export default function CrearUsuarioModal({ onClose }: { onClose: () => void }) 
       const res = await fetch('/api/casino/crear-usuario', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: username.trim().toLowerCase(), password }),
       });
       const data = await res.json();
 
@@ -41,7 +41,6 @@ export default function CrearUsuarioModal({ onClose }: { onClose: () => void }) 
   const handleCopy = () => {
     const texto = `Te dejo tu nuevo usuario :\n\nUsuario: ${username}\nContraseña: ${password}\n\nLink de la plataforma: https://casino-zeus.eu\n\nCARGA MINIMA: $2.000\nRETIRO MINIMO: $5.000\nCARGAS & RETIROS 24HS SIN LIMITES`;
     navigator.clipboard.writeText(texto);
-    // ✅ Alert de Copiado
     Swal.fire({
       icon: 'success',
       title: '¡Copiado!',
@@ -58,8 +57,20 @@ export default function CrearUsuarioModal({ onClose }: { onClose: () => void }) 
           <>
             <h2 className="text-2xl font-black mb-6 text-white uppercase italic">Nuevo Jugador Zeus</h2>
             <div className="space-y-4">
-              <input type="text" value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold" placeholder="Nombre de Usuario" />
-              <input type="text" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold" placeholder="Contraseña" />
+              <input 
+                type="text" 
+                value={username} 
+                onChange={e => setUsername(e.target.value.toLowerCase())} // Fuerza minúscula
+                className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold" 
+                placeholder="Nombre de Usuario" 
+              />
+              <input 
+                type="text" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold" 
+                placeholder="Contraseña" 
+              />
               <div className="flex gap-3 pt-4">
                 <button onClick={onClose} className="flex-1 bg-gray-800 py-4 rounded-2xl font-black text-xs uppercase">Cancelar</button>
                 <button onClick={handleCrear} disabled={!username || !password || loading} className="flex-1 bg-blue-600 hover:bg-blue-700 py-4 rounded-2xl font-black text-xs uppercase transition-all">

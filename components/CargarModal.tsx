@@ -27,7 +27,6 @@ export default function CargarModal({ transfer, onClose, onSuccess }: Props) {
   const handleConfirmar = async () => {
     setLoading(true);
     
-    // Mostramos el loading pro de SweetAlert
     Swal.fire({
       title: 'Acreditando fichas...',
       text: `Enviando $${totalFinal.toLocaleString()} a Zeus`,
@@ -40,10 +39,10 @@ export default function CargarModal({ transfer, onClose, onSuccess }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          usuarioCasino: usuarioCasino.trim(), 
+          usuarioCasino: usuarioCasino.trim().toLowerCase(), // Convertimos a minúscula
           conBono, 
-          montoBono: Number(bonoCalculado), // Enviamos el bono
-          montoBase: Number(transfer.monto)  // Enviamos la base para que el backend sume
+          montoBono: Number(bonoCalculado),
+          montoBase: Number(transfer.monto)
         }),
       });
       
@@ -53,7 +52,7 @@ export default function CargarModal({ transfer, onClose, onSuccess }: Props) {
         await Swal.fire({
           icon: 'success',
           title: '¡Acreditado!',
-          text: `Usuario: ${usuarioCasino} | Total: $${totalFinal.toLocaleString()}`,
+          text: `Usuario: ${usuarioCasino.toLowerCase()} | Total: $${totalFinal.toLocaleString()}`,
           timer: 2000,
           showConfirmButton: false
         });
@@ -82,7 +81,13 @@ export default function CargarModal({ transfer, onClose, onSuccess }: Props) {
         </div>
 
         <div className="space-y-4">
-          <input type="text" value={usuarioCasino} onChange={e => setUsuarioCasino(e.target.value)} placeholder="Usuario Zeus" className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-blue-500" />
+          <input 
+            type="text" 
+            value={usuarioCasino} 
+            onChange={e => setUsuarioCasino(e.target.value.toLowerCase())} // Fuerza minúscula al escribir
+            placeholder="Usuario Zeus" 
+            className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-blue-500" 
+          />
           <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-800">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">

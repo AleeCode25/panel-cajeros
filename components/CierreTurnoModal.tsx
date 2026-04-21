@@ -44,7 +44,15 @@ export default function CierreTurnoModal({ onClose }: { onClose: () => void }) {
     const inicioStr = new Date(datos.desde).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
     const finStr = new Date(datos.hasta).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
 
-    const texto = `*CIERRE DE TURNO*\n👤 Cajero: ${datos.cajero}\n⏰ Desde: ${inicioStr}\n⏰ Hasta: ${finStr}\n\n💰 *Plata Real Cargada:* $${datos.totalReal.toLocaleString('es-AR')}\n🎁 *Regalos/Extras:* $${datos.totalRegalos.toLocaleString('es-AR')}\n📊 *Total Fichas Zeus:* $${(datos.totalReal + datos.totalRegalos).toLocaleString('es-AR')}\n\n✅ *Operaciones:* ${datos.cantidad}`;
+    const texto = `*CIERRE DE TURNO*\n👤 Cajero: ${datos.cajero}\n⏰ Desde: ${inicioStr}\n⏰ Hasta: ${finStr}\n\n` +
+                  `✅ *INGRESOS*\n` +
+                  `💰 Plata Real Cargada: $${datos.totalReal.toLocaleString('es-AR')}\n` +
+                  `🎁 Regalos/Extras: $${datos.totalRegalos.toLocaleString('es-AR')}\n` +
+                  `📊 Total Fichas Zeus: $${(datos.totalReal + datos.totalRegalos).toLocaleString('es-AR')}\n\n` +
+                  `❌ *SALIDAS*\n` +
+                  `🎰 Fichas Retiradas: $${(datos.totalRetiros || 0).toLocaleString('es-AR')}\n` +
+                  `💸 Pagos Enviados: $${(datos.totalPagos || 0).toLocaleString('es-AR')}\n\n` +
+                  `📈 *Operaciones:* ${datos.cantidad}`;
     
     navigator.clipboard.writeText(texto);
     Swal.fire({ icon: 'success', title: 'Ticket copiado', text: 'Listo para enviar', timer: 1500, showConfirmButton: false });
@@ -88,19 +96,31 @@ export default function CierreTurnoModal({ onClose }: { onClose: () => void }) {
             </p>
             
             <div className="bg-gray-950 p-6 rounded-2xl mb-6 border border-gray-800 font-mono text-sm shadow-inner space-y-3">
-              <div className="flex justify-between border-b border-gray-800 pb-2">
-                <span className="text-gray-500">Plata Real:</span>
+              <p className="text-gray-500 text-[10px] border-b border-gray-800 pb-1 uppercase font-bold">Ingresos</p>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Plata Real:</span>
                 <span className="text-green-400 font-bold">${datos.totalReal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between border-b border-gray-800 pb-2">
-                <span className="text-gray-500">Regalos/Extras:</span>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Regalos/Extras:</span>
                 <span className="text-pink-400 font-bold">${datos.totalRegalos.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between pt-2">
-                <span className="text-gray-400 font-bold">TOTAL ZEUS:</span>
+              <div className="flex justify-between pb-2 border-b border-gray-800">
+                <span className="text-gray-300 font-bold">TOTAL ZEUS:</span>
                 <span className="text-white font-black text-lg">${(datos.totalReal + datos.totalRegalos).toLocaleString()}</span>
               </div>
-              <div className="text-center pt-4 text-[10px] text-gray-600">
+
+              <p className="text-gray-500 text-[10px] border-b border-gray-800 pb-1 mt-2 uppercase font-bold">Salidas</p>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Retiros Fichas:</span>
+                <span className="text-orange-400 font-bold">-${(datos.totalRetiros || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between pb-2 border-b border-gray-800">
+                <span className="text-gray-400">Pagos Enviados:</span>
+                <span className="text-red-500 font-bold">-${(datos.totalPagos || 0).toLocaleString()}</span>
+              </div>
+
+              <div className="text-center pt-2 text-[10px] text-gray-600">
                 Operaciones del período: {datos.cantidad}
               </div>
             </div>

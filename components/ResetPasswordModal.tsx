@@ -4,15 +4,18 @@ import Swal from 'sweetalert2';
 
 export default function ResetPasswordModal({ onClose }: { onClose: () => void }) {
   const [username, setUsername] = useState('');
+  // 👇 Empezamos con la clave por defecto ya escrita
+  const [password, setPassword] = useState('12345678'); 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const handleReset = async () => {
+    const claveFinal = password.trim() || '12345678'; // Si lo borran, forzamos 12345678 por las dudas
+
     setLoading(true);
-    // 📢 Alert de Cargando
     Swal.fire({
       title: 'Cambiando clave...',
-      text: 'Se establecerá 12345678 como nueva contraseña',
+      text: `Se establecerá ${claveFinal} como nueva contraseña`,
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -21,7 +24,10 @@ export default function ResetPasswordModal({ onClose }: { onClose: () => void })
       const res = await fetch('/api/casino/reset-password', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ 
+          username: username.trim().toLowerCase(),
+          password: claveFinal // 👈 Mandamos la clave elegida al backend
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -38,9 +44,10 @@ export default function ResetPasswordModal({ onClose }: { onClose: () => void })
   };
 
   const handleCopy = () => {
-    const texto = `Te dejo tu usuario y contraseña :\n\nUsuario : ${username}\nContraseña : 12345678\n\nLink de la plataforma: https://casino-zeus.eu \n\nCARGA MINIMA: $2.000\nRETIRO MINIMO: $5.000\nCARGAS & RETIROS 24HS SIN LIMITES`;
+    const claveFinal = password.trim() || '12345678';
+    const texto = `Te dejo tu usuario y contraseña :\n\nUsuario : ${username.toLowerCase()}\nContraseña : ${claveFinal}\n\nLink de la plataforma: https://casino-zeus.eu \n\nCARGA MINIMA: $2.000\nRETIRO MINIMO: $5.000\nCARGAS & RETIROS 24HS SIN LIMITES`;
+    
     navigator.clipboard.writeText(texto);
-    // ✅ Alert de Copiado
     Swal.fire({
       icon: 'success',
       title: '¡Copiado!',
@@ -56,12 +63,33 @@ export default function ResetPasswordModal({ onClose }: { onClose: () => void })
         {!success ? (
           <>
             <h2 className="text-xl font-black mb-1 text-white uppercase italic text-center">Restablecer Clave</h2>
-            <p className="text-center text-gray-500 text-[10px] uppercase mb-6 tracking-widest">La clave será: 12345678</p>
+            <p className="text-center text-gray-500 text-[10px] uppercase mb-6 tracking-widest">Ingresá usuario y la nueva clave</p>
             <div className="space-y-4">
-              <input type="text" placeholder="Nombre de usuario..." value={username} onChange={e => setUsername(e.target.value)} className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500" />
-              <div className="flex gap-2">
+              <div>
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Usuario Zeus</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: juanperez123" 
+                  value={username} 
+                  onChange={e => setUsername(e.target.value.toLowerCase())} 
+                  className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500" 
+                />
+              </div>
+              
+              <div>
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Nueva Contraseña</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: 12345678" 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500" 
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
                 <button onClick={onClose} className="flex-1 bg-gray-800 py-4 rounded-2xl font-black text-xs uppercase text-gray-400">Cerrar</button>
-                <button onClick={handleReset} disabled={!username || loading} className="flex-[2] bg-orange-600 hover:bg-orange-700 py-4 rounded-2xl font-black text-xs uppercase transition-all">
+                <button onClick={handleReset} disabled={!username || !password || loading} className="flex-[2] bg-orange-600 hover:bg-orange-700 py-4 rounded-2xl font-black text-xs uppercase transition-all">
                   {loading ? "..." : "RESTABLECER CLAVE"}
                 </button>
               </div>

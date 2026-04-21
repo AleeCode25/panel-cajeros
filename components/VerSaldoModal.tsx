@@ -17,14 +17,13 @@ export default function VerSaldoModal({ onClose }: { onClose: () => void }) {
     });
 
     try {
-      const res = await fetch(`/api/casino/balance?username=${username}`);
+      const res = await fetch(`/api/casino/balance?username=${username.trim().toLowerCase()}`);
       const data = await res.json();
 
       if (res.ok) {
         Swal.close();
-        // Formateamos el saldo con 2 decimales
         const saldoFormateado = parseFloat(data.balance).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        setResultado({ username: data.username, balance: saldoFormateado });
+        setResultado({ username: data.username.toLowerCase(), balance: saldoFormateado });
       } else {
         Swal.fire({ icon: 'error', title: 'Ups...', text: data.error || 'No se pudo obtener el saldo' });
       }
@@ -61,7 +60,7 @@ export default function VerSaldoModal({ onClose }: { onClose: () => void }) {
                 type="text" 
                 placeholder="Nombre de usuario..." 
                 value={username} 
-                onChange={e => setUsername(e.target.value)} 
+                onChange={e => setUsername(e.target.value.toLowerCase())} // Fuerza minúscula
                 className="w-full bg-gray-800 border border-gray-700 p-4 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-blue-500"
                 autoFocus
               />

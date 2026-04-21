@@ -8,10 +8,13 @@ export async function PATCH(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-    const { username } = await req.json();
-    const nuevaClave = "12345678"; // La clave que pediste del 1 al 8
+    // 👇 Ahora recibimos tanto el usuario como la clave elegida
+    const { username, password } = await req.json();
+    
+    const safeUsername = username.trim().toLowerCase();
+    const nuevaClave = password ? password.trim() : "12345678"; // Si mandan vacío por error, atajamos con 12345678
 
-    const zeusUrl = `https://admin.casino-zeus.eu/api/operator/v1/users/${username}/reset-password`;
+    const zeusUrl = `https://admin.casino-zeus.eu/api/operator/v1/users/${safeUsername}/reset-password`;
     const config = await Config.findOne({ key: "ZEUS_TOKEN" });
 
     if (!config || !config.value) {
@@ -27,6 +30,7 @@ export async function PATCH(req: Request) {
         'Content-Type': 'application/json',
         'User-Agent': 'PostmanRuntime/7.51.0'
       },
+      // 👇 Mandamos la clave personalizada a Zeus
       body: JSON.stringify({ password: nuevaClave })
     });
 

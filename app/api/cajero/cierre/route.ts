@@ -35,12 +35,20 @@ export async function GET(req: Request) {
 
     let totalReal = 0;
     let totalRegalos = 0;
+    let totalRetiros = 0;
+    let totalPagos = 0;
 
     transferencias.forEach(t => {
       const base = parseFloat(t.monto?.toString() || "0");
       const esEspecial = ['CANAL', 'INSTAGRAM', 'AGENDAMIENTO'].includes(t.remitente) || t.coelsaCode?.startsWith("ESPECIAL-");
+      const esRetiro = t.remitente === "RETIRO";
+      const esPago = t.remitente === "PAGO_BILLETERA";
 
-      if (esEspecial) {
+      if (esPago) {
+        totalPagos += base;
+      } else if (esRetiro) {
+        totalRetiros += base;
+      } else if (esEspecial) {
         totalRegalos += base;
       } else {
         totalReal += base;
@@ -50,6 +58,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ 
       totalReal, 
       totalRegalos, 
+      totalRetiros,
+      totalPagos,
       cantidad: transferencias.length, 
       cajero: session.user?.name,
       desde: fechaDesde.toISOString(),
