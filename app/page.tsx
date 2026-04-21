@@ -136,15 +136,21 @@ export default function Home() {
     }
   };
 
-  const handlePagarRetiro = async (t: any) => {
+  // 👇 NUEVA FUNCIÓN INDEPENDIENTE PARA PAGAR 👇
+  const handlePagoManual = async () => {
     const { value: formValues } = await Swal.fire({
-      title: '💸 Procesar Pago Real',
+      title: '🏦 Enviar Pago Libre',
       html: `
         <div style="text-align: left;">
+          <label style="font-size: 10px; font-weight: bold; color: gray;">MONTO A ENVIAR ($)</label>
+          <input id="swal-amount" type="number" class="swal2-input" style="margin: 5px 0 15px 0; width: 100%;" placeholder="15000">
+          
           <label style="font-size: 10px; font-weight: bold; color: gray;">CBU / CVU (22 dígitos)</label>
           <input id="swal-cbu" class="swal2-input" style="margin: 5px 0 15px 0; width: 100%;" placeholder="00000...">
+          
           <label style="font-size: 10px; font-weight: bold; color: gray;">NOMBRE TITULAR</label>
           <input id="swal-name" class="swal2-input" style="margin: 5px 0 15px 0; width: 100%;" placeholder="Juan Perez">
+          
           <label style="font-size: 10px; font-weight: bold; color: gray;">CUIT / CUIL (Solo números)</label>
           <input id="swal-cuit" class="swal2-input" style="margin: 5px 0 0 0; width: 100%;" placeholder="20XXXXXXXX2">
         </div>
@@ -154,6 +160,7 @@ export default function Home() {
       confirmButtonText: 'ENVIAR DINERO',
       confirmButtonColor: '#10b981',
       preConfirm: () => ({
+        amount: (document.getElementById('swal-amount') as HTMLInputElement).value,
         cbu: (document.getElementById('swal-cbu') as HTMLInputElement).value,
         name: (document.getElementById('swal-name') as HTMLInputElement).value,
         cuit: (document.getElementById('swal-cuit') as HTMLInputElement).value
@@ -161,7 +168,8 @@ export default function Home() {
     });
   
     if (formValues) {
-      if (formValues.cbu.length !== 22) return Swal.fire('Error', 'CBU Inválido', 'error');
+      if (!formValues.amount || Number(formValues.amount) <= 0) return Swal.fire('Error', 'Ingresá un monto válido', 'error');
+      if (formValues.cbu.length !== 22) return Swal.fire('Error', 'El CBU debe tener 22 dígitos', 'error');
       
       Swal.fire({ title: 'Transfiriendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
   
@@ -170,17 +178,21 @@ export default function Home() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            amount: formValues.amount,
             toCBU: formValues.cbu,
-            amount: t.monto,
             toName: formValues.name,
             toCUIT: formValues.cuit
           })
         });
         const data = await res.json();
-        if (res.ok) Swal.fire('¡Enviado!', 'La plata salió correctamente.', 'success');
-        else Swal.fire('Error', data.error, 'error');
+        if (res.ok) {
+          Swal.fire('¡Enviado!', `El pago se registró correctamente.`, 'success');
+          fetchData(); // Para que aparezca el pago en la tabla
+        } else {
+          Swal.fire('Error', data.error, 'error');
+        }
       } catch (e) {
-        Swal.fire('Error', 'Falla de conexión', 'error');
+        Swal.fire('Error', 'Falla de conexión con la billetera', 'error');
       }
     }
   };
@@ -196,8 +208,16 @@ export default function Home() {
         <div className="flex items-center gap-2 flex-wrap justify-center relative">
           <button onClick={() => setShowCrearUsuario(true)} className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">+ Usuario</button>
           <button onClick={() => setShowSaldoModal(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-emerald-600 hover:text-white flex items-center gap-1">💰 Saldo</button>
+          
           <button onClick={() => setShowRetirarModal(true)} className="bg-red-600/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-red-600 hover:text-white flex items-center gap-1">💸 Retirar</button>
           
+          {/* 👇 NUEVO BOTÓN DE PAGO INDEPENDIENTE (SOLO ADMIN) 👇 */}
+          {(session?.user as any)?.role === 'ADMIN' && (
+            <button onClick={handlePagoManual} className="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-green-600 hover:text-white flex items-center gap-1">
+              🏦 Enviar Pago
+            </button>
+          )}
+
           <button onClick={() => setShowHistorialModal(true)} className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-blue-600 hover:text-white flex items-center gap-1">🕵️‍♂️ Historial</button>
 
           <div className="relative">
@@ -276,33 +296,27 @@ export default function Home() {
           <div className="bg-gray-900 rounded-[32px] border border-gray-800 overflow-hidden shadow-2xl overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-800/50 text-gray-400 text-[10px] uppercase font-black">
-                <tr>
-                  <th className="p-5">Fecha</th>
-                  <th className="p-5">Tipo</th>
-                  <th className="p-5">Total</th>
-                  <th className="p-5">Usuario</th>
-                  <th className="p-5">Cajero</th>
-                  <th className="p-5 text-center text-blue-500 italic uppercase">Acción</th>
-                </tr>
+                <tr><th className="p-5">Fecha</th><th className="p-5">Tipo</th><th className="p-5">Total</th><th className="p-5">Usuario</th><th className="p-5">Cajero</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {paginatedRealizadas.map((t: any) => (
-                  <tr key={t._id} className="hover:bg-gray-800/30">
-                    <td className="p-5 font-mono text-gray-500">{new Date(t.fechaCarga).toLocaleString()}</td>
-                    <td className="p-5 uppercase font-bold text-xs">{t.remitente}</td>
-                    <td className="p-5 font-black text-green-400">${((t.monto || 0) + (t.montoBono || 0)).toLocaleString()}</td>
-                    <td className="p-5 text-blue-400 font-black italic">{t.usuarioCasino}</td>
-                    <td className="p-5 text-gray-400 uppercase font-bold text-[10px]">{t.cajeroAsignado?.nombre || 'S/D'}</td>
-                    <td className="p-5 text-center">
-                      <button 
-                        onClick={() => handlePagarRetiro(t)}
-                        className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all"
-                      >
-                        💸 Pagar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {paginatedRealizadas.map((t: any) => {
+                  const esRetiro = t.remitente === "RETIRO";
+                  const esPago = t.remitente === "PAGO_BILLETERA";
+                  
+                  return (
+                    <tr key={t._id} className="hover:bg-gray-800/30">
+                      <td className="p-5 font-mono text-gray-500">{new Date(t.fechaCarga).toLocaleString()}</td>
+                      <td className="p-5 uppercase font-bold text-xs">
+                        {esPago ? <span className="text-red-400 bg-red-500/10 px-2 py-1 rounded">Pago Real</span> : t.remitente}
+                      </td>
+                      <td className={`p-5 font-black ${(esRetiro || esPago) ? 'text-orange-500' : 'text-green-400'}`}>
+                        {(esRetiro || esPago) ? '-' : ''}${((t.monto || 0) + (t.montoBono || 0)).toLocaleString()}
+                      </td>
+                      <td className="p-5 text-blue-400 font-black italic">{t.usuarioCasino}</td>
+                      <td className="p-5 text-gray-400 uppercase font-bold text-[10px]">{t.cajeroAsignado?.nombre || 'S/D'}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
