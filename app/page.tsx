@@ -320,4 +320,4 @@ export default function Home() {
       {showHistorialModal && <HistorialUsuarioModal onClose={() => setShowHistorialModal(false)} />}
     </main>
   );
-}  
+}
