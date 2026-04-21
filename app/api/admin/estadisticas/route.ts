@@ -34,18 +34,22 @@ export async function GET(req: Request) {
     let totalSinBono = 0;   
     let totalBonos = 0;     
     let totalEspeciales = 0;
-    let totalRetiros = 0; // <-- NUEVA VARIABLE SEPARADA
+    let totalRetiros = 0; 
+    let totalPagado = 0; // <-- NUEVA VARIABLE PARA PAGOS REALES
 
     transferencias.forEach(t => {
       const montoBase = parseFloat(t.monto.toString()) || 0;
       const montoBono = parseFloat(t.montoBono?.toString() || "0");
       
       const esRetiro = t.remitente === "RETIRO";
+      const esPago = t.remitente === "PAGO_BILLETERA"; // <-- DETECTAMOS EL PAGO
       const esEspecial = ['CANAL', 'INSTAGRAM', 'AGENDAMIENTO'].includes(t.remitente) || (t.coelsaCode && t.coelsaCode.startsWith("ESPECIAL-"));
 
       // LÓGICA DE SEPARACIÓN
-      if (esRetiro) {
-        totalRetiros += montoBase; // Solo suma a retiros, NO toca la plata real
+      if (esPago) {
+        totalPagado += montoBase;
+      } else if (esRetiro) {
+        totalRetiros += montoBase;
       } else if (esEspecial) {
         totalEspeciales += montoBase; 
         totalEntrado += montoBase;    
@@ -62,7 +66,8 @@ export async function GET(req: Request) {
         totalSinBono,
         totalBonos,
         totalEspeciales,
-        totalRetiros, // <-- LO MANDAMOS AL FRONTEND
+        totalRetiros,
+        totalPagado, // <-- LO MANDAMOS AL FRONTEND
         cantidad: transferencias.length
       },
       movimientos: transferencias

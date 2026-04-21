@@ -40,13 +40,15 @@ export default function AdminEstadisticas() {
 
   const exportToCSV = () => {
     if (!data || data.movimientos.length === 0) return;
-    const headers = ["Fecha,Cajero,Detalle,Monto Base,Bono,Total,Usuario Zeus\n"];
+    const headers = ["Fecha,Cajero,Detalle,Monto Base,Bono,Total,Usuario Zeus/Titular\n"];
     const rows = data.movimientos.map((m: any) => {
       const fecha = `"${new Date(m.fechaCarga).toLocaleString('es-AR')}"`;
       const cajero = `"${m.cajeroAsignado?.nombre || 'S/D'}"`;
       const detalle = `"${m.remitente}"`;
-      // Si es retiro, le ponemos el signo menos en el Excel para identificarlo mejor
-      const signo = m.remitente === "RETIRO" ? "-" : "";
+      
+      // Si es retiro O PAGO, le ponemos el signo menos en el Excel
+      const signo = (m.remitente === "RETIRO" || m.remitente === "PAGO_BILLETERA") ? "-" : "";
+      
       const base = `${signo}${m.monto || 0}`;
       const bono = m.montoBono || 0;
       const total = `${signo}${(m.monto || 0) + bono}`;
@@ -104,30 +106,43 @@ export default function AdminEstadisticas() {
 
         {data && (
           <>
-            {/* AHORA SON 5 COLUMNAS PARA MOSTRAR LOS RETIROS APARTE */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            {/* GRILLA DE TARJETAS ADAPTADA */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl">
-                <p className="text-green-400 text-[9px] font-black uppercase tracking-widest mb-1">Plata Real</p>
+                <p className="text-green-400 text-[9px] font-black uppercase tracking-widest mb-1">Plata Real (Entrada)</p>
                 <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalSinBono || 0).toLocaleString()}</h3>
               </div>
-              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-blue-500">
-                <p className="text-blue-500 text-[9px] font-black uppercase tracking-widest mb-1">Total en Bonos</p>
-                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalBonos || 0).toLocaleString()}</h3>
-              </div>
-              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-pink-500">
-                <p className="text-pink-500 text-[9px] font-black uppercase tracking-widest mb-1">Regalos</p>
-                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalEspeciales || 0).toLocaleString()}</h3>
-              </div>
               
-              {/* NUEVA TARJETA ROJA PARA RETIROS */}
               <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-red-500">
-                <p className="text-red-500 text-[9px] font-black uppercase tracking-widest mb-1">Retiros Fichas</p>
-                <h3 className="text-2xl font-black text-red-400 font-mono">${(data.resumen.totalRetiros || 0).toLocaleString()}</h3>
+                <p className="text-red-500 text-[9px] font-black uppercase tracking-widest mb-1">Pagos (Salida CBU)</p>
+                <h3 className="text-2xl font-black text-red-400 font-mono">-${(data.resumen.totalPagado || 0).toLocaleString()}</h3>
+              </div>
+
+              <div className="bg-white p-6 rounded-[24px] shadow-2xl">
+                <p className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-1">Ganancia Neta (Caja)</p>
+                <h3 className="text-2xl font-black text-black font-mono">
+                  ${((data.resumen.totalSinBono || 0) - (data.resumen.totalPagado || 0)).toLocaleString()}
+                </h3>
               </div>
 
               <div className="bg-blue-600 p-6 rounded-[24px] shadow-2xl shadow-blue-900/20">
                 <p className="text-blue-200 text-[9px] font-black uppercase tracking-widest mb-1">Total Zeus Entrado</p>
                 <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalEntrado || 0).toLocaleString()}</h3>
+              </div>
+
+              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-blue-500">
+                <p className="text-blue-500 text-[9px] font-black uppercase tracking-widest mb-1">Total en Bonos</p>
+                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalBonos || 0).toLocaleString()}</h3>
+              </div>
+              
+              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-pink-500">
+                <p className="text-pink-500 text-[9px] font-black uppercase tracking-widest mb-1">Regalos Manuales</p>
+                <h3 className="text-2xl font-black text-white font-mono">${(data.resumen.totalEspeciales || 0).toLocaleString()}</h3>
+              </div>
+              
+              <div className="bg-gray-900 p-6 rounded-[24px] border border-gray-800 shadow-xl border-l-4 border-l-orange-500">
+                <p className="text-orange-500 text-[9px] font-black uppercase tracking-widest mb-1">Retiros Fichas (Zeus)</p>
+                <h3 className="text-2xl font-black text-orange-400 font-mono">${(data.resumen.totalRetiros || 0).toLocaleString()}</h3>
               </div>
             </div>
 
@@ -140,13 +155,15 @@ export default function AdminEstadisticas() {
                     <th className="p-5">Detalle</th>
                     <th className="p-5">Monto Base</th>
                     <th className="p-5">Bono</th>
-                    <th className="p-5">Total Acreditado</th>
+                    <th className="p-5">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {data.movimientos.map((m: any) => {
                     const esEspecial = ['CANAL', 'INSTAGRAM', 'AGENDAMIENTO'].includes(m.remitente) || m.coelsaCode?.startsWith("ESPECIAL-");
                     const esRetiro = m.remitente === "RETIRO";
+                    const esPago = m.remitente === "PAGO_BILLETERA";
+                    const esSalida = esRetiro || esPago;
                     
                     return (
                       <tr key={m._id} className="hover:bg-gray-800/20 transition-all">
@@ -156,16 +173,19 @@ export default function AdminEstadisticas() {
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-sm font-bold uppercase">{m.remitente}</p>
                             {esEspecial && <span className="bg-pink-500/20 text-pink-400 text-[8px] px-2 py-1 rounded-md font-black uppercase">Regalo</span>}
-                            {esRetiro && <span className="bg-red-500/20 text-red-500 text-[8px] px-2 py-1 rounded-md font-black uppercase">Extracción</span>}
+                            {esRetiro && <span className="bg-orange-500/20 text-orange-500 text-[8px] px-2 py-1 rounded-md font-black uppercase">Fichas Restadas</span>}
+                            {esPago && <span className="bg-red-600/20 text-red-500 text-[8px] px-2 py-1 rounded-md font-black uppercase">Pago Real</span>}
                           </div>
-                          <p className="text-[10px] text-blue-400 font-mono">ID Zeus: {m.usuarioCasino}</p>
+                          <p className="text-[10px] text-blue-400 font-mono">
+                            {esPago ? `Titular: ${m.usuarioCasino}` : `ID Zeus: ${m.usuarioCasino}`}
+                          </p>
                         </td>
-                        <td className={`p-5 font-mono font-bold ${esRetiro ? 'text-red-400' : esEspecial ? 'text-pink-400' : 'text-green-400'}`}>
-                          {esRetiro ? '-' : ''}${(m.monto || 0).toLocaleString()}
+                        <td className={`p-5 font-mono font-bold ${esSalida ? 'text-red-400' : esEspecial ? 'text-pink-400' : 'text-green-400'}`}>
+                          {esSalida ? '-' : ''}${(m.monto || 0).toLocaleString()}
                         </td>
                         <td className="p-5 font-mono text-blue-400 font-bold">{m.montoBono > 0 ? `+${(m.montoBono).toLocaleString()}` : '-'}</td>
-                        <td className={`p-5 font-mono font-black text-lg ${esRetiro ? 'text-red-500' : 'text-white'}`}>
-                           {esRetiro ? '-' : ''}${((m.monto || 0) + (m.montoBono || 0)).toLocaleString()}
+                        <td className={`p-5 font-mono font-black text-lg ${esSalida ? 'text-red-500' : 'text-white'}`}>
+                           {esSalida ? '-' : ''}${((m.monto || 0) + (m.montoBono || 0)).toLocaleString()}
                         </td>
                       </tr>
                     );
