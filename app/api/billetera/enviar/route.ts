@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Config from "@/models/Config";
-import Transferencia from "@/models/Transferencia"; // <-- IMPORTACIÓN NECESARIA
+import Transferencia from "@/models/Transferencia";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
-    const { toCBU, amount, toName, toCUIT } = await req.json();
+    const { toCBU, amount } = await req.json();
 
     const configToken = await Config.findOne({ key: "WALLET_TOKEN" });
     const configAccount = await Config.findOne({ key: "WALLET_ACCOUNT_ID" });
@@ -30,8 +30,6 @@ export async function POST(req: Request) {
         accountId: configAccount.value,
         toCBU: toCBU.trim(),
         amount: Number(amount),
-        toName: toName.trim(),
-        toCUIT: Number(toCUIT),
         concept: "Retiro Club Prime"
       })
     });
@@ -39,15 +37,14 @@ export async function POST(req: Request) {
     const data = await resp.json();
     if (!resp.ok) return NextResponse.json({ error: data.message || "Error en billetera" }, { status: 400 });
 
-    // 👇 REGISTRAMOS EL PAGO EN LA BASE DE DATOS
-    const timestamp = Date.now();
+    // REGISTRAMOS EL PAGO EN LA BASE DE DATOS
     await Transferencia.create({
       remitente: "PAGO_BILLETERA", 
       monto: Number(amount), 
-      cuit: toCUIT.toString(),
+      cuit: "S/D",
       coelsaCode: data.id, 
       estado: "CARGADA", 
-      usuarioCasino: toName.trim(), 
+      usuarioCasino: "PAGO DIRECTO", 
       cajeroAsignado: (session.user as any).id,
       fechaCarga: new Date(),
       montoBono: 0,

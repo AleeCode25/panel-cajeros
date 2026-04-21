@@ -136,7 +136,6 @@ export default function Home() {
     }
   };
 
-  // 👇 NUEVA FUNCIÓN INDEPENDIENTE PARA PAGAR 👇
   const handlePagoManual = async () => {
     const { value: formValues } = await Swal.fire({
       title: '🏦 Enviar Pago Libre',
@@ -146,13 +145,7 @@ export default function Home() {
           <input id="swal-amount" type="number" class="swal2-input" style="margin: 5px 0 15px 0; width: 100%;" placeholder="15000">
           
           <label style="font-size: 10px; font-weight: bold; color: gray;">CBU / CVU (22 dígitos)</label>
-          <input id="swal-cbu" class="swal2-input" style="margin: 5px 0 15px 0; width: 100%;" placeholder="00000...">
-          
-          <label style="font-size: 10px; font-weight: bold; color: gray;">NOMBRE TITULAR</label>
-          <input id="swal-name" class="swal2-input" style="margin: 5px 0 15px 0; width: 100%;" placeholder="Juan Perez">
-          
-          <label style="font-size: 10px; font-weight: bold; color: gray;">CUIT / CUIL (Solo números)</label>
-          <input id="swal-cuit" class="swal2-input" style="margin: 5px 0 0 0; width: 100%;" placeholder="20XXXXXXXX2">
+          <input id="swal-cbu" class="swal2-input" style="margin: 5px 0 0 0; width: 100%;" placeholder="00000...">
         </div>
       `,
       focusConfirm: false,
@@ -161,9 +154,7 @@ export default function Home() {
       confirmButtonColor: '#10b981',
       preConfirm: () => ({
         amount: (document.getElementById('swal-amount') as HTMLInputElement).value,
-        cbu: (document.getElementById('swal-cbu') as HTMLInputElement).value,
-        name: (document.getElementById('swal-name') as HTMLInputElement).value,
-        cuit: (document.getElementById('swal-cuit') as HTMLInputElement).value
+        cbu: (document.getElementById('swal-cbu') as HTMLInputElement).value
       })
     });
   
@@ -179,20 +170,18 @@ export default function Home() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             amount: formValues.amount,
-            toCBU: formValues.cbu,
-            toName: formValues.name,
-            toCUIT: formValues.cuit
+            toCBU: formValues.cbu
           })
         });
         const data = await res.json();
         if (res.ok) {
-          Swal.fire('¡Enviado!', `El pago se registró correctamente.`, 'success');
-          fetchData(); // Para que aparezca el pago en la tabla
+          Swal.fire('¡Enviado!', `Pago realizado con éxito.`, 'success');
+          fetchData();
         } else {
           Swal.fire('Error', data.error, 'error');
         }
       } catch (e) {
-        Swal.fire('Error', 'Falla de conexión con la billetera', 'error');
+        Swal.fire('Error', 'Falla de conexión', 'error');
       }
     }
   };
@@ -208,10 +197,8 @@ export default function Home() {
         <div className="flex items-center gap-2 flex-wrap justify-center relative">
           <button onClick={() => setShowCrearUsuario(true)} className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">+ Usuario</button>
           <button onClick={() => setShowSaldoModal(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-emerald-600 hover:text-white flex items-center gap-1">💰 Saldo</button>
-          
           <button onClick={() => setShowRetirarModal(true)} className="bg-red-600/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-red-600 hover:text-white flex items-center gap-1">💸 Retirar</button>
           
-          {/* 👇 NUEVO BOTÓN DE PAGO INDEPENDIENTE (SOLO ADMIN) 👇 */}
           {(session?.user as any)?.role === 'ADMIN' && (
             <button onClick={handlePagoManual} className="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-green-600 hover:text-white flex items-center gap-1">
               🏦 Enviar Pago
