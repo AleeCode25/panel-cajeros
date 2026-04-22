@@ -199,7 +199,7 @@ export default function Home() {
           <button onClick={() => setShowSaldoModal(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-emerald-600 hover:text-white flex items-center gap-1">💰 Saldo</button>
           <button onClick={() => setShowRetirarModal(true)} className="bg-red-600/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-red-600 hover:text-white flex items-center gap-1">💸 Retirar</button>
 
-          {((session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.pagosHabilitados) && (
+          {((session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.canPay) && (
             <button onClick={handlePagoManual} className="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-green-600 hover:text-white flex items-center gap-1">
               🏦 Enviar Pago
             </button>
