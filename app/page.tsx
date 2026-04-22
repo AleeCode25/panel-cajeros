@@ -6,10 +6,10 @@ import CargarModal from '@/components/CargarModal';
 import CrearUsuarioModal from '@/components/CrearUsuarioModal';
 import CargaEspecialModal from '@/components/CargaEspecialModal';
 import ResetPasswordModal from '@/components/ResetPasswordModal';
-import VerSaldoModal from '@/components/VerSaldoModal'; 
-import RetirarModal from '@/components/RetirarModal'; 
+import VerSaldoModal from '@/components/VerSaldoModal';
+import RetirarModal from '@/components/RetirarModal';
 import CierreTurnoModal from '@/components/CierreTurnoModal';
-import HistorialUsuarioModal from '@/components/HistorialUsuarioModal'; 
+import HistorialUsuarioModal from '@/components/HistorialUsuarioModal';
 import Link from 'next/link';
 
 export default function Home() {
@@ -25,7 +25,7 @@ export default function Home() {
   const [showSaldoModal, setShowSaldoModal] = useState(false);
   const [showRetirarModal, setShowRetirarModal] = useState(false);
   const [showCierreModal, setShowCierreModal] = useState(false);
-  const [showHistorialModal, setShowHistorialModal] = useState(false); 
+  const [showHistorialModal, setShowHistorialModal] = useState(false);
 
   const [especialType, setEspecialType] = useState<string | null>(null);
   const [tab, setTab] = useState('pendientes');
@@ -43,7 +43,7 @@ export default function Home() {
         const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/woodpecker.ogg');
         audio.play().catch(e => console.log('El navegador bloqueó el autoplay del sonido'));
       }
-      prevPendientes.current = dataP.length; 
+      prevPendientes.current = dataP.length;
 
       setPendientes(dataP);
 
@@ -157,13 +157,13 @@ export default function Home() {
         cbu: (document.getElementById('swal-cbu') as HTMLInputElement).value
       })
     });
-  
+
     if (formValues) {
       if (!formValues.amount || Number(formValues.amount) <= 0) return Swal.fire('Error', 'Ingresá un monto válido', 'error');
       if (formValues.cbu.length !== 22) return Swal.fire('Error', 'El CBU debe tener 22 dígitos', 'error');
-      
+
       Swal.fire({ title: 'Transfiriendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-  
+
       try {
         const res = await fetch('/api/billetera/enviar', {
           method: 'POST',
@@ -198,8 +198,8 @@ export default function Home() {
           <button onClick={() => setShowCrearUsuario(true)} className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">+ Usuario</button>
           <button onClick={() => setShowSaldoModal(true)} className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-emerald-600 hover:text-white flex items-center gap-1">💰 Saldo</button>
           <button onClick={() => setShowRetirarModal(true)} className="bg-red-600/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-red-600 hover:text-white flex items-center gap-1">💸 Retirar</button>
-          
-          {(session?.user as any)?.role === 'ADMIN' && (
+
+          {((session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.pagosHabilitados) && (
             <button onClick={handlePagoManual} className="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all hover:bg-green-600 hover:text-white flex items-center gap-1">
               🏦 Enviar Pago
             </button>
@@ -289,7 +289,7 @@ export default function Home() {
                 {paginatedRealizadas.map((t: any) => {
                   const esRetiro = t.remitente === "RETIRO";
                   const esPago = t.remitente === "PAGO_BILLETERA";
-                  
+
                   return (
                     <tr key={t._id} className="hover:bg-gray-800/30">
                       <td className="p-5 font-mono text-gray-500">{new Date(t.fechaCarga).toLocaleString()}</td>
