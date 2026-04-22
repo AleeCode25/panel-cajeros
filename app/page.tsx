@@ -144,8 +144,8 @@ export default function Home() {
           <label style="font-size: 10px; font-weight: bold; color: gray;">MONTO A ENVIAR ($)</label>
           <input id="swal-amount" type="number" class="swal2-input" style="margin: 5px 0 15px 0; width: 100%;" placeholder="15000">
           
-          <label style="font-size: 10px; font-weight: bold; color: gray;">CBU / CVU (22 dígitos)</label>
-          <input id="swal-cbu" class="swal2-input" style="margin: 5px 0 0 0; width: 100%;" placeholder="00000...">
+          <label style="font-size: 10px; font-weight: bold; color: gray;">CBU / CVU O ALIAS</label>
+          <input id="swal-cbu" class="swal2-input" style="margin: 5px 0 0 0; width: 100%;" placeholder="Ej: mi.alias.mp o 00000...">
         </div>
       `,
       focusConfirm: false,
@@ -160,7 +160,14 @@ export default function Home() {
   
     if (formValues) {
       if (!formValues.amount || Number(formValues.amount) <= 0) return Swal.fire('Error', 'Ingresá un monto válido', 'error');
-      if (formValues.cbu.length !== 22) return Swal.fire('Error', 'El CBU debe tener 22 dígitos', 'error');
+      
+      const destino = formValues.cbu.trim();
+      const isCBU = /^\d{22}$/.test(destino);
+      const isAlias = destino.length >= 6 && !destino.includes(' ');
+
+      if (!isCBU && !isAlias) {
+        return Swal.fire('Error', 'El destino debe ser un CBU (22 números) o un Alias válido', 'error');
+      }
       
       Swal.fire({ title: 'Transfiriendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
   
@@ -170,7 +177,7 @@ export default function Home() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             amount: formValues.amount,
-            toCBU: formValues.cbu
+            toCBU: destino
           })
         });
         const data = await res.json();
@@ -190,7 +197,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-950 text-white p-4 md:p-8 font-sans tracking-tight">
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center bg-gray-900 p-6 rounded-3xl border border-gray-800 shadow-2xl gap-4">
         <div>
-          <h1 className="text-2xl font-black text-blue-500 italic uppercase">Panel</h1>
+          <h1 className="text-2xl font-black text-blue-500 italic uppercase">Panel Club Prime</h1>
           <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Cajero: <span className="text-white">{session?.user?.name || "Cargando..."}</span></p>
         </div>
 
