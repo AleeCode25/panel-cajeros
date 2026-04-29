@@ -3,7 +3,11 @@ import dbConnect from "@/lib/mongodb";
 import Transferencia from "@/models/Transferencia";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import Config from "@/models/Config";
 
+// =========================================================================
+// FUNCIÓN GET: ESTADÍSTICAS DEL ADMINISTRADOR (Tu código original intacto)
+// =========================================================================
 export async function GET(req: Request) {
   try {
     await dbConnect();
@@ -75,5 +79,77 @@ export async function GET(req: Request) {
 
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+// =========================================================================
+// FUNCIÓN POST: EJECUTAR CARGA DE REGALOS (CANAL, INSTAGRAM, AGENDAMIENTO)
+// =========================================================================
+export async function POST(req: Request) {
+  try {
+    await dbConnect();
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+    const { usuarioCasino, tipo } = await req.json();
+
+    if (!usuarioCasino || !tipo) {
+      return NextResponse.json({ error: "Faltan datos (Usuario o Tipo de Carga)" }, { status: 400 });
+    }
+
+    // Filtro ant-mayúsculas
+    const safeUsername = usuarioCasino.trim().toLowerCase();
+
+    // Lógica dinámica: Canal = 1000, Resto = 500
+    const monto = tipo === 'CANAL' ? 1000 : 500;
+
+    const zeusUrl = "https://admin.casino-zeus.eu/api/operator/v1/account-transfers";
+    const config = await Config.findOne({ key: "ZEUS_TOKEN" });
+
+    if (!config || !config.value) {
+      return NextResponse.json({ error: "Falta configurar el Token de Zeus en el panel de Admin" }, { status: 500 });
+    }
+
+    const token = config.value;
+
+    // Mandamos el saldo a Zeus
+    const zeusResponse = await fetch(zeusUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'PostmanRuntime/7.51.0'
+      },
+      body: JSON.stringify({
+        amount: monto,
+        operation: "INCOME",
+        targetUserName: safeUsername
+      })
+    });
+
+    if (!zeusResponse.ok) {
+      const errorText = await zeusResponse.text();
+      return NextResponse.json({ error: `Zeus rechazó: ${errorText}` }, { status: 400 });
+    }
+
+    // Registramos la carga especial en la Base de Datos para tus estadísticas
+    const timestamp = Date.now();
+    await Transferencia.create({
+      remitente: tipo, // Va a decir CANAL, INSTAGRAM o AGENDAMIENTO
+      monto: monto,    // Tu GET lee de acá para los especiales
+      montoBono: 0, 
+      cuit: "S/D",
+      coelsaCode: `ESPECIAL-${timestamp}`,
+      estado: "CARGADA",
+      usuarioCasino: safeUsername,
+      cajeroAsignado: (session.user as any).id,
+      fechaCarga: new Date(),
+      conBono: true,
+      transaccionId: `ESPECIAL-${timestamp}`
+    });
+
+    return NextResponse.json({ success: true, acreditado: monto });
+  } catch (error: any) {
+    return NextResponse.json({ error: "Error de servidor: " + error.message }, { status: 500 });
   }
 }
