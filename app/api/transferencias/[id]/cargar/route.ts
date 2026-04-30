@@ -8,13 +8,30 @@ import Config from "@/models/Config";
 export async function POST(req: Request, { params }: any) {
   try {
     await dbConnect();
-    const { id } = await params;
+    const { id } = await params; // En Next.js 14+ a veces no hace falta el await en params, pero lo dejamos como lo tenías.
     const body = await req.json();
     
-    const { usuarioCasino: usuarioDelModal, conBono, montoBono } = body; 
+    // Agregamos "apiSecret" a lo que recibimos del body
+    const { usuarioCasino: usuarioDelModal, conBono, montoBono, apiSecret } = body; 
 
+    // --- LÓGICA DE AUTENTICACIÓN DUAL ---
     const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Sesión expirada. Volvé a loguearte." }, { status: 401 });
+    const CLAVE_SECRETA_BACKEND = "ReySanto2026_AutoCargaSegura"; // Podés cambiar esta contraseña
+    let cajeroId = "";
+
+    // 1. Verificamos si es una Autocarga desde Render
+    if (apiSecret && apiSecret === CLAVE_SECRETA_BACKEND) {
+        cajeroId = "AUTOCARGA";
+    } 
+    // 2. Si no es Autocarga, verificamos que haya un cajero logueado
+    else if (session && session.user) {
+        cajeroId = (session.user as any).id;
+    } 
+    // 3. Si no hay ni clave ni sesión, bloqueamos
+    else {
+        return NextResponse.json({ error: "No autorizado. Sesión expirada o clave inválida." }, { status: 401 });
+    }
+    // ------------------------------------
 
     const transferencia = await Transferencia.findById(id);
     if (!transferencia) return NextResponse.json({ error: "No se encontró la transferencia en la base de datos." }, { status: 404 });
@@ -22,7 +39,7 @@ export async function POST(req: Request, { params }: any) {
     const usuarioFinal = usuarioDelModal || transferencia.usuarioCasino;
     if (!usuarioFinal) return NextResponse.json({ error: "Debes ingresar un Usuario de Casino." }, { status: 400 });
 
-    const safeUsername = usuarioFinal.trim().toLowerCase(); // Filtro backend de minúscula
+    const safeUsername = usuarioFinal.trim().toLowerCase();
 
     const montoBase = Number(transferencia.monto);
     const extraBono = conBono ? Number(montoBono) : 0;
@@ -63,7 +80,7 @@ export async function POST(req: Request, { params }: any) {
     transferencia.estado = "CARGADA";
     transferencia.usuarioCasino = safeUsername;
     transferencia.fechaCarga = new Date();
-    transferencia.cajeroAsignado = (session.user as any).id;
+    transferencia.cajeroAsignado = cajeroId; // <-- ACÁ GUARDA "AUTOCARGA" O EL ID DEL CAJERO
     transferencia.montoBono = extraBono;
     transferencia.conBono = conBono;
     
