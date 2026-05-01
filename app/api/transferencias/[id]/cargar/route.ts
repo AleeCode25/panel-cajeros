@@ -8,27 +8,23 @@ import Config from "@/models/Config";
 export async function POST(req: Request, { params }: any) {
   try {
     await dbConnect();
-    const { id } = await params; // En Next.js 14+ a veces no hace falta el await en params, pero lo dejamos como lo tenías.
+    const { id } = await params;
     const body = await req.json();
     
-    // Agregamos "apiSecret" a lo que recibimos del body
     const { usuarioCasino: usuarioDelModal, conBono, montoBono, apiSecret } = body; 
 
     // --- LÓGICA DE AUTENTICACIÓN DUAL ---
     const session = await getServerSession(authOptions);
-    const CLAVE_SECRETA_BACKEND = "ReySanto2026_AutoCargaSegura"; // Podés cambiar esta contraseña
-    let cajeroId = "";
+    const CLAVE_SECRETA_BACKEND = "ReySanto2026_AutoCargaSegura"; 
+    
+    let cajeroId = null;
 
-    // 1. Verificamos si es una Autocarga desde Render
     if (apiSecret && apiSecret === CLAVE_SECRETA_BACKEND) {
-        cajeroId = "AUTOCARGA";
-    } 
-    // 2. Si no es Autocarga, verificamos que haya un cajero logueado
-    else if (session && session.user) {
+        // ASIGNAMOS EL ID DEL USUARIO "AUTOCARGA" QUE CREASTE
+        cajeroId = "69f3fdfc26d70c5c586f746f";
+    } else if (session && session.user) {
         cajeroId = (session.user as any).id;
-    } 
-    // 3. Si no hay ni clave ni sesión, bloqueamos
-    else {
+    } else {
         return NextResponse.json({ error: "No autorizado. Sesión expirada o clave inválida." }, { status: 401 });
     }
     // ------------------------------------
@@ -80,7 +76,7 @@ export async function POST(req: Request, { params }: any) {
     transferencia.estado = "CARGADA";
     transferencia.usuarioCasino = safeUsername;
     transferencia.fechaCarga = new Date();
-    transferencia.cajeroAsignado = cajeroId; // <-- ACÁ GUARDA "AUTOCARGA" O EL ID DEL CAJERO
+    transferencia.cajeroAsignado = cajeroId; // <-- Ahora Mongoose va a guardar el ObjectId sin chistar
     transferencia.montoBono = extraBono;
     transferencia.conBono = conBono;
     
