@@ -39,7 +39,7 @@ export default function CrearUsuarioModal({ onClose }: { onClose: () => void }) 
   };
 
   const handleCopy = () => {
-    const texto = `Te dejo tu nuevo usuario :\n\nUsuario: ${username}\nContraseña: ${password}\n\nLink de la plataforma: https://casino-zeus.eu\n\nCARGA MINIMA: $2.000\nRETIRO MINIMO: $5.000\nCARGAS & RETIROS 24HS SIN LIMITES`;
+    const texto = `Te dejo tu nuevo usuario :\n\nUsuario: ${username}\nContraseña: ${password}\n\nLink de la plataforma: https://casinozeus.tech\n\nCARGA MINIMA: $2.000\nRETIRO MINIMO: $5.000\nCARGAS & RETIROS 24HS SIN LIMITES`;
     navigator.clipboard.writeText(texto);
     Swal.fire({
       icon: 'success',
