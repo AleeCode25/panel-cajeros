@@ -11,17 +11,19 @@ export async function POST(req: Request, { params }: any) {
     const { id } = await params;
     const body = await req.json();
     
-    const { usuarioCasino: usuarioDelModal, conBono, montoBono, apiSecret } = body; 
+    // Cambiamos 'const' por 'let' porque si es autocarga los vamos a modificar
+    let { usuarioCasino: usuarioDelModal, conBono, montoBono, apiSecret } = body; 
 
     // --- LÓGICA DE AUTENTICACIÓN DUAL ---
     const session = await getServerSession(authOptions);
     const CLAVE_SECRETA_BACKEND = "ReySanto2026_AutoCargaSegura"; 
     
     let cajeroId = null;
+    let esAutocarga = false; // Nos sirve para aplicar reglas específicas
 
     if (apiSecret && apiSecret === CLAVE_SECRETA_BACKEND) {
-        // ASIGNAMOS EL ID DEL USUARIO "AUTOCARGA" QUE CREASTE
-        cajeroId = "69f3fdfc26d70c5c586f746f";
+        cajeroId = "69f3fdfc26d70c5c586f746f"; // ID del usuario AUTOCARGA
+        esAutocarga = true;
     } else if (session && session.user) {
         cajeroId = (session.user as any).id;
     } else {
@@ -36,8 +38,16 @@ export async function POST(req: Request, { params }: any) {
     if (!usuarioFinal) return NextResponse.json({ error: "Debes ingresar un Usuario de Casino." }, { status: 400 });
 
     const safeUsername = usuarioFinal.trim().toLowerCase();
-
     const montoBase = Number(transferencia.monto);
+
+    // --- REGLA DE NEGOCIO: BONO 20% SI ES AUTOCARGA ---
+    if (esAutocarga) {
+        conBono = true;
+        montoBono = montoBase * 0.20; // Le calculamos el 20%
+        console.log(`🎁 Autocarga detectada para ${safeUsername}: Aplicando 20% de bono ($${montoBono}) al monto base ($${montoBase})`);
+    }
+    // --------------------------------------------------
+
     const extraBono = conBono ? Number(montoBono) : 0;
     const totalAAcreditar = montoBase + extraBono;
 
@@ -76,7 +86,7 @@ export async function POST(req: Request, { params }: any) {
     transferencia.estado = "CARGADA";
     transferencia.usuarioCasino = safeUsername;
     transferencia.fechaCarga = new Date();
-    transferencia.cajeroAsignado = cajeroId; // <-- Ahora Mongoose va a guardar el ObjectId sin chistar
+    transferencia.cajeroAsignado = cajeroId; 
     transferencia.montoBono = extraBono;
     transferencia.conBono = conBono;
     
