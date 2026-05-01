@@ -11,7 +11,6 @@ export async function POST(req: Request, { params }: any) {
     const { id } = await params;
     const body = await req.json();
     
-    // Cambiamos 'const' por 'let' porque si es autocarga los vamos a modificar
     let { usuarioCasino: usuarioDelModal, conBono, montoBono, apiSecret } = body; 
 
     // --- LÓGICA DE AUTENTICACIÓN DUAL ---
@@ -19,20 +18,19 @@ export async function POST(req: Request, { params }: any) {
     const CLAVE_SECRETA_BACKEND = "ReySanto2026_AutoCargaSegura"; 
     
     let cajeroId = null;
-    let esAutocarga = false; // Nos sirve para aplicar reglas específicas
+    let esAutocarga = false;
 
     if (apiSecret && apiSecret === CLAVE_SECRETA_BACKEND) {
-        cajeroId = "69f3fdfc26d70c5c586f746f"; // ID del usuario AUTOCARGA
+        cajeroId = "69f3fdfc26d70c5c586f746f"; 
         esAutocarga = true;
     } else if (session && session.user) {
         cajeroId = (session.user as any).id;
     } else {
         return NextResponse.json({ error: "No autorizado. Sesión expirada o clave inválida." }, { status: 401 });
     }
-    // ------------------------------------
 
     const transferencia = await Transferencia.findById(id);
-    if (!transferencia) return NextResponse.json({ error: "No se encontró la transferencia en la base de datos." }, { status: 404 });
+    if (!transferencia) return NextResponse.json({ error: "No se encontró la transferencia." }, { status: 404 });
 
     const usuarioFinal = usuarioDelModal || transferencia.usuarioCasino;
     if (!usuarioFinal) return NextResponse.json({ error: "Debes ingresar un Usuario de Casino." }, { status: 400 });
@@ -40,13 +38,36 @@ export async function POST(req: Request, { params }: any) {
     const safeUsername = usuarioFinal.trim().toLowerCase();
     const montoBase = Number(transferencia.monto);
 
-    // --- REGLA DE NEGOCIO: BONO 20% SI ES AUTOCARGA ---
+    // --- REGLA DE NEGOCIO: BONO DINÁMICO (SOLO PARA AUTOCARGA) ---
     if (esAutocarga) {
-        conBono = true;
-        montoBono = montoBase * 0.20; // Le calculamos el 20%
-        console.log(`🎁 Autocarga detectada para ${safeUsername}: Aplicando 20% de bono ($${montoBono}) al monto base ($${montoBase})`);
+        // 1. Buscamos si este usuario ya tuvo cargas exitosas antes
+        const cargasPrevias = await Transferencia.countDocuments({ 
+            usuarioCasino: safeUsername, 
+            estado: "CARGADA" 
+        });
+
+        let porcentajeAAplicar = 0;
+
+        if (cargasPrevias === 0) {
+            // Es su primera carga en la historia -> 20% Fijo
+            porcentajeAAplicar = 20;
+            console.log(`🎁 Primera carga para ${safeUsername}: Aplicando 20% FIJO.`);
+        } else {
+            // Ya es cliente -> Leemos el porcentaje de la configuración
+            const configBono = await Config.findOne({ key: "BONO_PORCENTAJE" });
+            porcentajeAAplicar = Number(configBono?.value) || 0;
+            console.log(`🔄 Cliente recurrente ${safeUsername}: Aplicando Bono del ${porcentajeAAplicar}%.`);
+        }
+
+        if (porcentajeAAplicar > 0) {
+            conBono = true;
+            montoBono = montoBase * (porcentajeAAplicar / 100);
+        } else {
+            conBono = false;
+            montoBono = 0;
+        }
     }
-    // --------------------------------------------------
+    // --------------------------------------------------------------
 
     const extraBono = conBono ? Number(montoBono) : 0;
     const totalAAcreditar = montoBase + extraBono;
@@ -56,18 +77,16 @@ export async function POST(req: Request, { params }: any) {
     }
 
     const zeusUrl = "https://admin.casino-zeus.eu/api/operator/v1/account-transfers";
-    const config = await Config.findOne({ key: "ZEUS_TOKEN" });
+    const configZeus = await Config.findOne({ key: "ZEUS_TOKEN" });
 
-    if (!config || !config.value) {
+    if (!configZeus || !configZeus.value) {
       return NextResponse.json({ error: "Falta configurar el Token de Zeus en el panel de Admin" }, { status: 500 });
     }
 
-    const token = config.value;
-    
     const zeusResponse = await fetch(zeusUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${configZeus.value}`,
         'Content-Type': 'application/json',
         'User-Agent': 'PostmanRuntime/7.51.0'
       },
